@@ -1,49 +1,114 @@
-'use client';
+"use client";
 
-import Navbar from '@/components/Navbar';
-import { motion } from 'framer-motion';
-import { useState } from 'react';
-import { cn } from '@/lib/utils';
-import { Calendar, DollarSign, Tag, Info, Wallet } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
-import { useWallet } from '@/contexts/WalletContext';
+import Navbar from "@/components/Navbar";
+import { motion } from "framer-motion";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { Calendar, DollarSign, Tag, Info, Wallet, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { useWallet } from "@/contexts/WalletContext";
+import { prepareCreateCampaignTx, submitTx, getCampaignCount, pollTx } from "@/lib/contract";
+import { rpc } from "@stellar/stellar-sdk";
+import { useRouter } from "next/navigation";
 
 export default function CreateCampaign() {
-  const { address, connect, isConnecting } = useWallet();
+  const { address, connect, isConnecting, sign } = useWallet();
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    name: 'Build a solar well in Kaduna',
-    description:
-      'Funding a solar-powered water pump to serve 200 families with clean water year-round.',
-    goal: '15000',
-    deadline: '2026-03-31',
-    category: 'Tech',
+    name: "Build a solar well in Kaduna",
+    description: "Funding a solar-powered water pump to serve 200 families with clean water year-round.",
+    goal: "15000",
+    deadline: "2026-12-31",
+    category: "Tech",
   });
 
-  const categories = ['Education', 'Environment', 'Tech', 'Art', 'Community'];
+  const categories = ["Education", "Environment", "Tech", "Art", "Community"];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!address) {
+      toast.error("Wallet not connected");
+      return;
+    }
 
-    // Demonstrate mapping to Soroban payload
-    const contractPayload = {
-      name: formData.name,
-      description: formData.description,
-      goal: Number(formData.goal),
-      deadline: Math.floor(new Date(formData.deadline).getTime() / 1000), // Unix timestamp for u64
-    };
+    const goalNum = parseFloat(formData.goal);
+    if (isNaN(goalNum) || goalNum <= 0) {
+      toast.error("Invalid goal amount");
+      return;
+    }
 
-    toast.success('Campaign Created Successfully', {
-      description: `Name: ${contractPayload.name}\nGoal: ${contractPayload.goal} XLM`,
-      action: {
-        label: 'View Transaction',
-        onClick: () => console.log(contractPayload),
-      },
-      duration: 5000,
-    });
+    const deadlineUnix = Math.floor(new Date(formData.deadline).getTime() / 1000);
+    if (deadlineUnix <= Math.floor(Date.now() / 1000)) {
+      toast.error("Deadline must be in the future");
+      return;
+    }
+
+    setIsSubmitting(true);
+    toast.loading("Preparing transaction...", { id: "create-toast" });
+
+    try {
+      // 1. Prepare transaction
+      const tx = await prepareCreateCampaignTx(
+        address,
+        formData.name,
+        formData.description,
+        goalNum,
+        deadlineUnix
+      );
+      
+      // 2. Sign with Freighter
+      toast.loading("Please sign the transaction in Freighter...", { id: "create-toast" });
+      const signResult = await sign(tx.toXDR());
+      
+      if (signResult.error || !signResult.signedTxXdr) {
+        throw new Error(signResult.error || "Signing cancelled");
+      }
+
+      // 3. Submit to network
+      toast.loading("Submitting to Stellar network...", { id: "create-toast" });
+      const submitResult = await submitTx(signResult.signedTxXdr);
+      
+      if (submitResult.status === "ERROR") {
+        console.error("Submission error details:", submitResult);
+        const errorMsg = typeof submitResult.errorResult === 'object' ? JSON.stringify(submitResult.errorResult) : submitResult.errorResult || submitResult.status;
+        throw new Error(`Transaction submission failed: ${errorMsg}`);
+      }
+
+      // 4. Poll for finality
+      toast.loading("Transaction submitted! Confirming on-chain...", { id: "create-toast" });
+      const finalResult = await pollTx(submitResult.hash);
+      
+      if (finalResult.status === rpc.Api.GetTransactionStatus.SUCCESS) {
+        toast.success("Campaign Created Successfully!", {
+          id: "create-toast",
+          description: `Your campaign "${formData.name}" is now live on Stellar.`,
+        });
+        
+        // Find the new campaign ID
+        const count = await getCampaignCount();
+        const newId = count - 1;
+        
+        // Redirect to the new campaign page
+        router.push(`/campaign/${newId}`);
+      } else {
+        throw new Error("Transaction failed on-chain.");
+      }
+
+    } catch (error: any) {
+      console.error("Creation error:", error);
+      toast.error("Failed to create campaign", {
+        id: "create-toast",
+        description: error.message || "An error occurred during the transaction.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -64,44 +129,12 @@ export default function CreateCampaign() {
               preserveAspectRatio="xMidYMid slice"
               className="opacity-60"
             >
-              <rect
-                x="20"
-                y="40"
-                width="120"
-                height="22"
-                rx="11"
-                fill="#00c9a7"
-                opacity="0.5"
-              />
-              <rect
-                x="160"
-                y="28"
-                width="80"
-                height="22"
-                rx="11"
-                fill="#4f7bff"
-                opacity="0.4"
-              />
+              <rect x="20" y="40" width="120" height="22" rx="11" fill="#00c9a7" opacity="0.5" />
+              <rect x="160" y="28" width="80" height="22" rx="11" fill="#4f7bff" opacity="0.4" />
               <circle cx="258" cy="50" r="20" fill="#e85d26" opacity="0.3" />
-              <rect
-                x="290"
-                y="40"
-                width="100"
-                height="22"
-                rx="11"
-                fill="#fbbf24"
-                opacity="0.4"
-              />
+              <rect x="290" y="40" width="100" height="22" rx="11" fill="#fbbf24" opacity="0.4" />
               <circle cx="410" cy="39" r="15" fill="#00c9a7" opacity="0.35" />
-              <rect
-                x="435"
-                y="50"
-                width="90"
-                height="18"
-                rx="9"
-                fill="#4f7bff"
-                opacity="0.3"
-              />
+              <rect x="435" y="50" width="90" height="18" rx="9" fill="#4f7bff" opacity="0.3" />
             </svg>
           </div>
 
@@ -132,6 +165,7 @@ export default function CreateCampaign() {
                 className="w-full h-auto bg-[var(--surface)] border border-[var(--border2)] rounded-2xl py-3.5 px-5 text-[0.95rem] focus-visible:border-[var(--teal)] focus-visible:ring-4 focus-visible:ring-[var(--teal)]/10 outline-none transition-all placeholder:text-[var(--muted-custom)]"
                 placeholder="Give your campaign a clear name"
                 required
+                disabled={isSubmitting}
               />
             </div>
 
@@ -147,6 +181,7 @@ export default function CreateCampaign() {
                 className="w-full bg-[var(--surface)] border border-[var(--border2)] rounded-2xl py-3.5 px-5 text-[0.9rem] min-h-[120px] resize-none focus-visible:border-[var(--teal)] focus-visible:ring-4 focus-visible:ring-[var(--teal)]/10 outline-none transition-all font-light leading-relaxed"
                 placeholder="Describe your campaign mission..."
                 required
+                disabled={isSubmitting}
               />
             </div>
 
@@ -165,6 +200,7 @@ export default function CreateCampaign() {
                     className="w-full h-auto bg-[var(--surface)] border border-[var(--border2)] rounded-2xl py-3.5 px-5 text-[1rem] font-bold pr-14 focus-visible:border-[var(--teal)] focus-visible:ring-4 focus-visible:ring-[var(--teal)]/10 outline-none transition-all"
                     required
                     min="1"
+                    disabled={isSubmitting}
                   />
                   <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[0.8rem] font-bold text-[var(--teal)]">
                     XLM
@@ -184,6 +220,7 @@ export default function CreateCampaign() {
                   }
                   className="w-full h-auto bg-[var(--surface)] border border-[var(--border2)] rounded-2xl py-3.5 px-5 text-[0.9rem] focus-visible:border-[var(--teal)] focus-visible:ring-4 focus-visible:ring-[var(--teal)]/10 outline-none transition-all block"
                   required
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -199,11 +236,12 @@ export default function CreateCampaign() {
                     type="button"
                     variant="outline"
                     onClick={() => setFormData({ ...formData, category: cat })}
+                    disabled={isSubmitting}
                     className={cn(
-                      'px-5 py-5 rounded-full text-[0.82rem] font-medium border transition-all hover:bg-transparent',
+                      "px-5 py-5 rounded-full text-[0.82rem] font-medium border transition-all hover:bg-transparent",
                       formData.category === cat
-                        ? 'bg-[rgba(0,201,167,0.07)] border-[var(--teal)] text-[var(--teal)] hover:text-[var(--teal)]'
-                        : 'bg-[var(--surface)] border-[var(--border2)] text-[var(--muted-custom)] hover:border-[var(--teal)] hover:text-[var(--text)]',
+                        ? "bg-[rgba(0,201,167,0.07)] border-[var(--teal)] text-[var(--teal)] hover:text-[var(--teal)]"
+                        : "bg-[var(--surface)] border-[var(--border2)] text-[var(--muted-custom)] hover:border-[var(--teal)] hover:text-[var(--text)]"
                     )}
                   >
                     {cat}
@@ -215,9 +253,17 @@ export default function CreateCampaign() {
             {address ? (
               <Button
                 type="submit"
-                className="w-full py-7 h-auto rounded-full bg-[var(--text)] text-[var(--bg)] font-bold text-[1rem] shadow-xl shadow-black/20 hover:-translate-y-1 hover:shadow-2xl hover:bg-[var(--text)] transition-all mt-4"
+                disabled={isSubmitting}
+                className="w-full py-7 h-auto rounded-full bg-[var(--text)] text-[var(--bg)] font-bold text-[1rem] shadow-xl shadow-black/20 hover:-translate-y-1 hover:shadow-2xl hover:bg-[var(--text)] transition-all mt-4 relative overflow-hidden"
               >
-                Create Campaign
+                {isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="animate-spin" size={18} />
+                    Deploying to Stellar...
+                  </span>
+                ) : (
+                  "Create Campaign"
+                )}
               </Button>
             ) : (
               <div className="mt-4 space-y-3">
@@ -233,7 +279,9 @@ export default function CreateCampaign() {
                   disabled={isConnecting}
                   className="w-full py-7 h-auto rounded-full bg-[var(--text)] text-[var(--bg)] font-bold text-[1rem] shadow-xl shadow-black/20 hover:-translate-y-1 hover:shadow-2xl hover:bg-[var(--text)] transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                 >
-                  {isConnecting ? "Connecting..." : "Connect Wallet to Continue"}
+                  {isConnecting
+                    ? "Connecting..."
+                    : "Connect Wallet to Continue"}
                 </Button>
               </div>
             )}

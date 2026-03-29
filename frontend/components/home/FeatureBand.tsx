@@ -31,7 +31,7 @@ export default function FeatureBand() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: i * 0.1 }}
-          className="relative z-10 p-6 sm:p-8 md:p-10 border-b md:border-b-0 md:border-r border-white/10 last:border-0 md:last:border-r-0"
+          className="relative z-10 p-6 sm:p-8 md:p-10 border-b md:border-b-0 md:border-r border-white/15 dark:border-black/15 last:border-0 md:last:border-r-0"
         >
           <div className="mb-4">{feature.icon}</div>
           <h3 className="font-sans text-base sm:text-lg font-semibold text-[var(--dark-text)] mb-2">

@@ -51,7 +51,7 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="sticky top-0 z-[200] flex items-center justify-between px-6 md:px-12 h-[60px] bg-[var(--nav-bg)] border-b border-[var(--border)] backdrop-blur-md transition-colors duration-300">
+    <nav className="sticky top-0 z-20 flex items-center justify-between px-6 md:px-12 h-[60px] bg-[var(--nav-bg)] border-b border-[var(--border)] backdrop-blur-md transition-colors duration-300">
       <Link href="/" className="flex items-center gap-2.5 group">
         <svg className="w-7 h-7" viewBox="0 0 28 28" fill="none">
           <rect width="28" height="28" rx="8" className="fill-[var(--text)]" />

@@ -7,6 +7,7 @@ import {
   requestAccess,
   getNetworkDetails,
   getAddress,
+  signTransaction,
 } from "@stellar/freighter-api";
 import { toast } from "sonner";
 
@@ -16,6 +17,7 @@ interface WalletContextType {
   network: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
+  sign: (xdr: string, opts?: { network?: string; accountToSign?: string }) => Promise<{ signedTxXdr?: string; error?: string }>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -112,6 +114,19 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const sign = async (xdrString: string, opts?: { networkPassphrase?: string; accountToSign?: string }) => {
+    try {
+      const result = await signTransaction(xdrString, {
+        networkPassphrase: opts?.networkPassphrase || "Test SDF Network ; September 2015",
+        address: opts?.accountToSign || address || undefined,
+      });
+      return result;
+    } catch (error) {
+      console.error("Signing failed", error);
+      return { error: "Signing failed" };
+    }
+  };
+
   const disconnect = () => {
     setAddress(null);
     setNetwork(null);
@@ -119,7 +134,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <WalletContext.Provider value={{ address, isConnecting, network, connect, disconnect }}>
+    <WalletContext.Provider value={{ address, isConnecting, network, connect, disconnect, sign }}>
       {children}
     </WalletContext.Provider>
   );

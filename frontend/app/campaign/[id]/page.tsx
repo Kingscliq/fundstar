@@ -5,48 +5,157 @@ import Navbar from "@/components/Navbar";
 import { motion } from "framer-motion";
 import { ArrowLeft, Clock, Users, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { getCampaignById, prepareFundCampaignTx, submitTx, pollTx } from "@/lib/contract";
+import { Campaign } from "@/lib/types";
+import { useWallet } from "@/contexts/WalletContext";
+import { rpc } from "@stellar/stellar-sdk";
 
-const MOCK_CAMPAIGN = {
-  id: "1",
-  category: "Education" as const,
-  name: "Build a coding lab for rural schools",
-  description: "Bringing programming education to 500+ students across 3 underserved regions in West Africa. Funds go toward computers, internet, and a 6-month curriculum from local instructors.",
-  raised: 7200,
-  goal: 10000,
-  daysLeft: 8,
-  backers: 18,
-  artType: "pills" as const,
-  address: "CABC...XYZ",
-};
-
-const MOCK_FEED = [
-  { addr: "GABC...4XZ", time: "2 min ago", amt: "+500 XLM", color: "#1a56db" },
-  { addr: "GXYZ...9QR", time: "14 min ago", amt: "+200 XLM", color: "#059669" },
-  { addr: "GMUS...7KL", time: "1 hr ago", amt: "+1,000 XLM", color: "#d97706" },
-  { addr: "GDEV...2MN", time: "3 hr ago", amt: "+350 XLM", color: "#7c3aed" },
-];
+const CATEGORIES: ("Education" | "Art" | "Tech" | "Environment")[] = ["Education", "Art", "Tech", "Environment"];
 
 export default function CampaignDetail() {
   const params = useParams();
   const router = useRouter();
+  const { address, sign, connect } = useWallet();
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
+  const [loading, setLoading] = useState(true);
   const [amount, setAmount] = useState("50");
+  const [isFunding, setIsFunding] = useState(false);
 
-  const percentage = Math.min(Math.round((MOCK_CAMPAIGN.raised / MOCK_CAMPAIGN.goal) * 100), 100);
+  const campaignId = Number(params?.id);
 
-  const handleFund = () => {
-    toast.success("Contribution Sent Successfully", {
-      description: `Funded ${MOCK_CAMPAIGN.name} with ${amount} XLM.`,
-      duration: 5000,
-    });
+  useEffect(() => {
+    async function loadCampaign() {
+      if (!campaignId && campaignId !== 0) return;
+      try {
+        const data = await getCampaignById(campaignId);
+        setCampaign(data);
+      } catch (error) {
+        console.error("Failed to load campaign:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadCampaign();
+  }, [campaignId]);
+
+  const handleFund = async () => {
+    if (!address) {
+      toast.error("Wallet not connected", {
+        description: "Please connect your wallet to fund this campaign.",
+        action: {
+          label: "Connect",
+          onClick: () => connect(),
+        },
+      });
+      return;
+    }
+
+    if (!campaign) return;
+
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      toast.error("Invalid amount", {
+        description: "Please enter a valid amount to fund.",
+      });
+      return;
+    }
+
+    setIsFunding(true);
+    toast.loading("Preparing transaction...", { id: "funding-toast" });
+
+    try {
+      // 1. Prepare transaction
+      const tx = await prepareFundCampaignTx(campaign.id, address, amountNum);
+      
+      // 2. Sign with Freighter
+      toast.loading("Please sign the transaction in Freighter...", { id: "funding-toast" });
+      const signResult = await sign(tx.toXDR());
+      
+      if (signResult.error || !signResult.signedTxXdr) {
+        throw new Error(signResult.error || "Signing cancelled");
+      }
+
+      // 3. Submit to network
+      toast.loading("Submitting to Stellar network...", { id: "funding-toast" });
+      const submitResult = await submitTx(signResult.signedTxXdr);
+      
+      if (submitResult.status === "ERROR") {
+        console.error("Submission error details:", submitResult);
+        throw new Error(`Transaction submission failed: ${submitResult.errorResult || "Check console for details"}`);
+      }
+
+      // 4. Poll for finality
+      toast.loading("Transaction submitted! Waiting for confirmation...", { id: "funding-toast" });
+      const finalResult = await pollTx(submitResult.hash);
+      
+      if (finalResult.status === rpc.Api.GetTransactionStatus.SUCCESS) {
+        toast.success("Contribution Successful!", {
+          id: "funding-toast",
+          description: `You successfully funded ${campaign.name} with ${amount} XLM.`,
+        });
+        
+        // Refresh campaign data
+        const updated = await getCampaignById(campaign.id);
+        if (updated) setCampaign(updated);
+      } else {
+        throw new Error("Transaction failed on-chain.");
+      }
+
+    } catch (error: any) {
+      console.error("Funding error:", error);
+      toast.error("Funding failed", {
+        id: "funding-toast",
+        description: error.message || "An error occurred during the transaction.",
+      });
+    } finally {
+      setIsFunding(false);
+    }
   };
 
+  if (loading) {
+    return (
+      <main className="flex-1 bg-(--bg)">
+        <Navbar />
+        <div className="max-w-6xl mx-auto px-6 py-20 text-center">
+          <div className="animate-pulse flex flex-col items-center">
+            <div className="w-full h-64 bg-[var(--surface)] rounded-[32px] mb-8" />
+            <div className="w-2/3 h-12 bg-[var(--surface)] rounded-lg mb-4" />
+            <div className="w-1/2 h-6 bg-[var(--surface)] rounded-lg" />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!campaign) {
+    return (
+      <main className="flex-1 bg-(--bg)">
+        <Navbar />
+        <div className="max-w-6xl mx-auto px-6 py-20 text-center">
+          <h1 className="text-2xl font-serif mb-4">Campaign not found</h1>
+          <Button onClick={() => router.push("/explore")}>Back to Explore</Button>
+        </div>
+      </main>
+    );
+  }
+
+  const raisedNum = Number(campaign.amount_raised) / 10_000_000;
+  const goalNum = Number(campaign.goal) / 10_000_000;
+  const percentage = goalNum > 0 ? Math.min(Math.round((raisedNum / goalNum) * 100), 100) : 0;
+  
+  const deadlineSec = Number(campaign.deadline);
+  const nowSec = Math.floor(Date.now() / 1000);
+  const daysLeft = Math.max(0, Math.ceil((deadlineSec - nowSec) / 86400));
+  
+  const category = CATEGORIES[campaign.id % CATEGORIES.length];
+
   return (
-    <main className="flex-1 bg-[var(--bg)]">
+    <main className="flex-1 bg-(--bg)">
       <Navbar />
       
       <div className="max-w-6xl mx-auto px-6 md:px-12 py-12 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-12">
@@ -77,22 +186,22 @@ export default function CampaignDetail() {
           </div>
 
           <Badge className="px-3 py-1 rounded-full text-[0.72rem] font-bold tracking-wider uppercase bg-[#d1fae5] text-[#065f46] hover:bg-[#d1fae5] border-[#a7f3d0] mb-5">
-            {MOCK_CAMPAIGN.category}
+            {category}
           </Badge>
           <h1 className="font-serif text-4xl md:text-5xl tracking-tight leading-none text-[var(--text)] mb-6">
-            {MOCK_CAMPAIGN.name}
+            {campaign.name}
           </h1>
           <p className="text-[1.05rem] text-[var(--text2)] leading-relaxed font-light mb-12">
-            {MOCK_CAMPAIGN.description}
+            {campaign.description}
           </p>
 
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-8 mb-10">
             <div className="flex justify-between items-baseline mb-5">
               <div className="font-serif text-4xl text-[var(--text)]">
-                {MOCK_CAMPAIGN.raised.toLocaleString()} XLM <span className="font-sans text-[0.85rem] text-[var(--text2)] font-light ml-2 uppercase tracking-wide">raised</span>
+                {raisedNum.toLocaleString(undefined, { maximumFractionDigits: 2 })} XLM <span className="font-sans text-[0.85rem] text-[var(--text2)] font-light ml-2 uppercase tracking-wide">raised</span>
               </div>
               <div className="text-[0.85rem] text-[var(--text2)]">
-                of {MOCK_CAMPAIGN.goal.toLocaleString()} XLM goal
+                of {goalNum.toLocaleString()} XLM goal
               </div>
             </div>
             
@@ -111,11 +220,11 @@ export default function CampaignDetail() {
                 <div className="text-[0.68rem] text-[var(--text2)] uppercase tracking-widest mt-1">Funded</div>
               </div>
               <div className="text-center px-4">
-                <div className="text-2xl font-bold tracking-tight text-[var(--text)]">{MOCK_CAMPAIGN.backers}</div>
+                <div className="text-2xl font-bold tracking-tight text-[var(--text)]">0</div>
                 <div className="text-[0.68rem] text-[var(--text2)] uppercase tracking-widest mt-1">Contributors</div>
               </div>
               <div className="text-center px-4">
-                <div className="text-2xl font-bold tracking-tight text-[var(--teal)]">{MOCK_CAMPAIGN.daysLeft}d</div>
+                <div className="text-2xl font-bold tracking-tight text-[var(--teal)]">{daysLeft}d</div>
                 <div className="text-[0.68rem] text-[var(--text2)] uppercase tracking-widest mt-1">Remaining</div>
               </div>
             </div>
@@ -127,21 +236,8 @@ export default function CampaignDetail() {
               Live Contributions
             </div>
             
-            <div className="divide-y divide-[var(--border)]">
-              {MOCK_FEED.map((item, i) => (
-                <div key={i} className="py-4 flex items-center justify-between group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[var(--surface2)] text-[var(--text)] flex items-center justify-center font-medium text-xs">
-                      {item.addr.charAt(1)}
-                    </div>
-                    <div>
-                      <div className="font-medium text-[0.8rem] text-[var(--text)] group-hover:text-[var(--teal)] transition-colors">{item.addr}</div>
-                      <div className="text-[0.7rem] text-[var(--text2)] mt-0.5">{item.time}</div>
-                    </div>
-                  </div>
-                  <div className="text-[0.85rem] font-semibold text-[var(--text)]">{item.amt}</div>
-                </div>
-              ))}
+            <div className="divide-y divide-[var(--border)] text-center py-10">
+              <p className="text-[var(--text2)] text-sm italic font-light">Soon: Live feed integration</p>
             </div>
           </div>
         </motion.div>
@@ -164,7 +260,7 @@ export default function CampaignDetail() {
                     variant="outline"
                     onClick={() => setAmount(preset)}
                     className={cn(
-                      "w-[3.25rem] h-[3.25rem] rounded-full flex items-center justify-center flex-shrink-0 p-0 text-[0.85rem] font-semibold border transition-all active:scale-95 hover:bg-transparent",
+                      "w-[3.25rem] h-[3.25rem] rounded-full flex items-center justify-center shrink-0 p-0 text-[0.85rem] font-semibold border transition-all active:scale-95 hover:bg-transparent",
                       amount === preset 
                         ? "bg-[rgba(0,201,167,0.07)] border-[var(--teal)] text-[var(--teal)] hover:text-[var(--teal)]" 
                         : "bg-[var(--surface2)] border-[var(--border2)] text-[var(--text2)] hover:border-[var(--teal)] hover:text-[var(--text)]"
@@ -191,19 +287,22 @@ export default function CampaignDetail() {
 
             <Button 
               onClick={handleFund}
+              disabled={isFunding}
               className="w-full h-auto py-7 rounded-full bg-[var(--text)] text-[var(--bg)] font-bold text-[1rem] shadow-xl shadow-black/20 hover:-translate-y-1 hover:shadow-2xl hover:bg-[var(--text)] transition-all mb-6 relative overflow-hidden"
             >
-              Fund this campaign →
+              {isFunding ? "Processing..." : "Fund this campaign →"}
             </Button>
 
-            <div className="text-[0.7rem] text-[var(--muted-custom)] text-center animate-pulse flex items-center justify-center gap-2 mb-6">
-              <Clock size={12} />
-              Awaiting Stellar confirmation...
-            </div>
+            {isFunding && (
+              <div className="text-[0.7rem] text-[var(--muted-custom)] text-center animate-pulse flex items-center justify-center gap-2 mb-6">
+                <Clock size={12} />
+                Awaiting Stellar confirmation...
+              </div>
+            )}
 
             <div className="text-[0.7rem] leading-relaxed text-[var(--text2)] text-center pt-6 border-t border-[var(--border)]">
               Fee ~0.00001 XLM <br />
-              Contract: <span className="font-mono text-[var(--teal)] uppercase">{MOCK_CAMPAIGN.address}</span>
+              Creator: <span className="font-mono text-[var(--teal)] uppercase truncate block mt-1">{campaign.creator}</span>
             </div>
           </div>
         </motion.aside>

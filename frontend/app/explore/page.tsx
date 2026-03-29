@@ -12,7 +12,9 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
-import { MOCK_CAMPAIGNS } from "@/lib/data";
+import { useEffect, useState } from "react";
+import { getAllCampaigns } from "@/lib/contract";
+import { Campaign } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import {
@@ -22,11 +24,28 @@ import {
   ChevronsRight,
   Columns,
   MoreVertical,
-  Plus,
 } from "lucide-react";
+
+const CATEGORIES: ("Education" | "Art" | "Tech" | "Environment")[] = ["Education", "Art", "Tech", "Environment"];
 
 export default function ExplorePage() {
   const router = useRouter();
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadCampaigns() {
+      try {
+        const data = await getAllCampaigns();
+        setCampaigns(data);
+      } catch (error) {
+        console.error("Failed to load campaigns:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadCampaigns();
+  }, []);
 
   return (
     <main className="flex-1 bg-[var(--bg)] min-h-screen">
@@ -45,10 +64,7 @@ export default function ExplorePage() {
               All Campaigns
             </button>
             <button className="px-4 py-1.5 rounded-full text-[var(--text2)] hover:text-[var(--text)] transition-colors flex items-center gap-1.5">
-              Live Projects <span className="flex items-center justify-center bg-[var(--surface2)] text-[0.7rem] w-5 h-5 rounded-full">3</span>
-            </button>
-            <button className="px-4 py-1.5 rounded-full text-[var(--text2)] hover:text-[var(--text)] transition-colors flex items-center gap-1.5">
-              Funded <span className="flex items-center justify-center bg-[var(--surface2)] text-[0.7rem] w-5 h-5 rounded-full">1</span>
+              Live Projects <span className="flex items-center justify-center bg-[var(--surface2)] text-[0.7rem] w-5 h-5 rounded-full">{campaigns.length}</span>
             </button>
           </div>
 
@@ -86,57 +102,80 @@ export default function ExplorePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {MOCK_CAMPAIGNS.map((campaign) => {
-                  const isEndingSoon = campaign.daysLeft < 3;
-                  const isFunded = campaign.raised >= campaign.goal;
-                  
-                  return (
-                    <TableRow
-                      key={campaign.id}
-                      onClick={() => router.push(`/campaign/${campaign.id}`)}
-                      className="cursor-pointer border-b-[var(--border2)] hover:bg-[var(--surface)]/50 transition-colors group h-16"
-                    >
-                      <TableCell className="font-medium text-[0.95rem] text-[var(--text)] group-hover:text-[var(--teal)] transition-colors">
-                        {campaign.name}
-                      </TableCell>
-                      
-                      <TableCell>
-                        <Badge variant="outline" className="rounded-full text-[0.7rem] bg-[var(--card-bg)] font-medium text-[var(--text2)] border-[var(--border2)] shadow-none px-2.5 py-0.5 whitespace-nowrap">
-                          {campaign.category}
-                        </Badge>
-                      </TableCell>
-                      
-                      <TableCell>
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[var(--border2)] text-[0.7rem] font-medium bg-[var(--card-bg)] text-[var(--text)] whitespace-nowrap">
-                          {isFunded ? (
-                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                          ) : (
-                            <svg className="w-3 h-3 text-[var(--text2)] animate-[spin_3s_linear_infinite]" viewBox="0 0 24 24" fill="none">
-                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="30 30" strokeLinecap="round" />
-                            </svg>
-                          )}
-                          {isFunded ? "Funded" : "Active"}
-                        </div>
-                      </TableCell>
-                      
-                      <TableCell className="text-[0.88rem] text-[var(--text)] hidden md:table-cell">
-                        {campaign.goal.toLocaleString()} XLM
-                      </TableCell>
-
-                      <TableCell className="text-[0.88rem] text-[var(--text)] hidden md:table-cell">
-                        {campaign.raised.toLocaleString()} XLM
-                      </TableCell>
-
-                      <TableCell className="text-[0.9rem] text-[var(--text)]">
-                        {campaign.daysLeft}
-                      </TableCell>
-
-                      <TableCell className="text-right text-[var(--muted-custom)] group-hover:text-[var(--text)] transition-colors">
-                        <MoreVertical size={16} className="ml-auto" />
+                {loading ? (
+                  [...Array(5)].map((_, i) => (
+                    <TableRow key={i} className="animate-pulse">
+                      <TableCell colSpan={7} className="h-16 pr-0">
+                        <div className="w-full h-8 bg-[var(--surface)] rounded-md" />
                       </TableCell>
                     </TableRow>
-                  );
-                })}
+                  ))
+                ) : campaigns.length > 0 ? (
+                  campaigns.map((campaign, i) => {
+                    const raisedNum = Number(campaign.amount_raised) / 10_000_000;
+                    const goalNum = Number(campaign.goal) / 10_000_000;
+                    const isFunded = raisedNum >= goalNum;
+                    
+                    const deadlineSec = Number(campaign.deadline);
+                    const nowSec = Math.floor(Date.now() / 1000);
+                    const daysLeft = Math.max(0, Math.ceil((deadlineSec - nowSec) / 86400));
+                    
+                    const category = CATEGORIES[i % CATEGORIES.length];
+
+                    return (
+                      <TableRow
+                        key={campaign.id}
+                        onClick={() => router.push(`/campaign/${campaign.id}`)}
+                        className="cursor-pointer border-b-[var(--border2)] hover:bg-[var(--surface)]/50 transition-colors group h-16"
+                      >
+                        <TableCell className="font-medium text-[0.95rem] text-[var(--text)] group-hover:text-[var(--teal)] transition-colors">
+                          {campaign.name}
+                        </TableCell>
+                        
+                        <TableCell>
+                          <Badge variant="outline" className="rounded-full text-[0.7rem] bg-[var(--card-bg)] font-medium text-[var(--text2)] border-[var(--border2)] shadow-none px-2.5 py-0.5 whitespace-nowrap">
+                            {category}
+                          </Badge>
+                        </TableCell>
+                        
+                        <TableCell>
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border border-[var(--border2)] text-[0.7rem] font-medium bg-[var(--card-bg)] text-[var(--text)] whitespace-nowrap">
+                            {isFunded ? (
+                              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                            ) : (
+                              <svg className="w-3 h-3 text-[var(--text2)] animate-[spin_3s_linear_infinite]" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="30 30" strokeLinecap="round" />
+                              </svg>
+                            )}
+                            {isFunded ? "Funded" : "Active"}
+                          </div>
+                        </TableCell>
+                        
+                        <TableCell className="text-[0.88rem] text-[var(--text)] hidden md:table-cell">
+                          {goalNum.toLocaleString()} XLM
+                        </TableCell>
+
+                        <TableCell className="text-[0.88rem] text-[var(--text)] hidden md:table-cell">
+                          {raisedNum.toLocaleString(undefined, { maximumFractionDigits: 2 })} XLM
+                        </TableCell>
+
+                        <TableCell className="text-[0.9rem] text-[var(--text)]">
+                          {daysLeft}
+                        </TableCell>
+
+                        <TableCell className="text-right text-[var(--muted-custom)] group-hover:text-[var(--text)] transition-colors">
+                          <MoreVertical size={16} className="ml-auto" />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-32 text-center text-[var(--text2)] italic">
+                      No campaigns found.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
@@ -144,7 +183,7 @@ export default function ExplorePage() {
           {/* Pagination Footer */}
           <div className="flex items-center justify-between px-6 py-4 border-t border-[var(--border2)] bg-[var(--bg)] text-[0.85rem] text-[var(--text2)]">
             <div className="hidden sm:block">
-              0 of {MOCK_CAMPAIGNS.length} row(s) selected.
+              {campaigns.length} row(s) total.
             </div>
             
             <div className="flex flex-1 sm:flex-none items-center justify-between sm:justify-end gap-6 sm:gap-8">

@@ -6,29 +6,43 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 interface CampaignCardProps {
-  id: string;
-  category: "Education" | "Art" | "Tech" | "Environment";
+  id: string | number;
+  category?: "Education" | "Art" | "Tech" | "Environment";
   name: string;
   description: string;
-  raised: number;
-  goal: number;
-  daysLeft: number;
-  backers: number;
-  artType: "pills" | "circles" | "semis" | "health";
+  raised: bigint | number;
+  goal: bigint | number;
+  deadline?: bigint | number; // Added to calculate daysLeft
+  daysLeft?: number;
+  backers?: number;
+  artType?: "pills" | "circles" | "semis" | "health";
 }
 
 export default function CampaignCard({
   id,
-  category,
+  category = "Tech",
   name,
   description,
   raised,
   goal,
-  daysLeft,
-  backers,
-  artType,
+  deadline,
+  daysLeft: initialDaysLeft,
+  backers = 0,
+  artType = "pills",
 }: CampaignCardProps) {
-  const percentage = Math.min(Math.round((raised / goal) * 100), 100);
+  // Convert stroops (bigint) to XLM (number) for percentage and display
+  const raisedNum = typeof raised === "bigint" ? Number(raised) / 10_000_000 : Number(raised);
+  const goalNum = typeof goal === "bigint" ? Number(goal) / 10_000_000 : Number(goal);
+  
+  const percentage = goalNum > 0 ? Math.min(Math.round((raisedNum / goalNum) * 100), 100) : 0;
+
+  // Calculate days left from deadline if provided
+  let daysLeft = initialDaysLeft ?? 0;
+  if (deadline) {
+    const deadlineSec = typeof deadline === "bigint" ? Number(deadline) : Number(deadline);
+    const nowSec = Math.floor(Date.now() / 1000);
+    daysLeft = Math.max(0, Math.ceil((deadlineSec - nowSec) / 86400));
+  }
 
   const categoryStyles = {
     Education: "text-[#065f46] bg-[#d1fae5] border-[#a7f3d0] dark:text-[#6ee7b7] dark:bg-[#6ee7b7]/10 dark:border-[#6ee7b7]/20",
@@ -87,7 +101,7 @@ export default function CampaignCard({
 
           <div className="flex justify-between items-center mb-3.5 gap-2 w-full">
             <div className="text-[0.82rem] font-bold tracking-tight truncate">
-              {raised.toLocaleString()} <span className="text-[0.72rem] font-normal text-[var(--muted-custom)]">/ {goal.toLocaleString()} XLM</span>
+              {raisedNum.toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-[0.72rem] font-normal text-[var(--muted-custom)]">/ {goalNum.toLocaleString()} XLM</span>
             </div>
             <div className={cn("text-[0.7rem] font-medium shrink-0 ml-auto", daysLeft < 3 ? "text-[#E85D26] font-bold" : "text-[var(--muted-custom)]")}>
               {daysLeft < 3 ? `🔥 ${daysLeft} days left` : `⏱ ${daysLeft} days left`}
