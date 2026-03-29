@@ -8,12 +8,12 @@ export default function FeatureBand() {
     {
       icon: <Zap className="text-[var(--teal)] w-6 h-6" />,
       title: "Real-time events",
-      description: "Soroban contract events stream live to the UI — every contribution updates progress instantly.",
+      description: "Every contribution updates campaign progress instantly. Watch your project grow in real-time.",
     },
     {
       icon: <Shield className="text-[var(--teal)] w-6 h-6" />,
       title: "Non-custodial",
-      description: "You hold your keys. Funds move through smart contracts, never through a centralized server.",
+      description: "You are in control. Funds move directly from backers to creators securely, without any middlemen overhead.",
     },
     {
       icon: <Globe className="text-[var(--teal)] w-6 h-6" />,

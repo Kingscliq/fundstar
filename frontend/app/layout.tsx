@@ -23,7 +23,7 @@ const dmMono = DM_Mono({
 
 export const metadata: Metadata = {
   title: "FundStar | Fund what matters, transparently",
-  description: "Crowdfunding on Stellar via Soroban smart contracts.",
+  description: "Transparent, borderless crowdfunding for the world's most innovative ideas.",
 };
 
 export default function RootLayout({

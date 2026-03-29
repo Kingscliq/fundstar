@@ -39,7 +39,7 @@ export default function CampaignDetail() {
   const percentage = Math.min(Math.round((MOCK_CAMPAIGN.raised / MOCK_CAMPAIGN.goal) * 100), 100);
 
   const handleFund = () => {
-    toast.success("Transaction Sent to Soroban", {
+    toast.success("Contribution Sent Successfully", {
       description: `Funded ${MOCK_CAMPAIGN.name} with ${amount} XLM.`,
       duration: 5000,
     });
@@ -57,7 +57,7 @@ export default function CampaignDetail() {
         >
           <button 
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-[0.78rem] text-[var(--muted)] hover:text-[var(--text)] transition-colors mb-8 group"
+            className="flex items-center gap-2 text-[0.78rem] text-[var(--text2)] hover:text-[var(--text)] transition-colors mb-8 group"
           >
             <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
             Back to campaigns
@@ -89,9 +89,9 @@ export default function CampaignDetail() {
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-8 mb-10">
             <div className="flex justify-between items-baseline mb-5">
               <div className="font-serif text-4xl text-[var(--text)]">
-                {MOCK_CAMPAIGN.raised.toLocaleString()} XLM <span className="font-sans text-[0.85rem] text-[var(--muted)] font-light ml-2 uppercase tracking-wide">raised</span>
+                {MOCK_CAMPAIGN.raised.toLocaleString()} XLM <span className="font-sans text-[0.85rem] text-[var(--text2)] font-light ml-2 uppercase tracking-wide">raised</span>
               </div>
-              <div className="text-[0.85rem] text-[var(--muted)]">
+              <div className="text-[0.85rem] text-[var(--text2)]">
                 of {MOCK_CAMPAIGN.goal.toLocaleString()} XLM goal
               </div>
             </div>
@@ -108,36 +108,38 @@ export default function CampaignDetail() {
             <div className="grid grid-cols-3 divide-x divide-[var(--border)] border-t border-[var(--border)] pt-8">
               <div className="text-center px-4">
                 <div className="text-2xl font-bold tracking-tight text-[var(--teal)]">{percentage}%</div>
-                <div className="text-[0.68rem] text-[var(--muted)] uppercase tracking-widest mt-1">Funded</div>
+                <div className="text-[0.68rem] text-[var(--text2)] uppercase tracking-widest mt-1">Funded</div>
               </div>
               <div className="text-center px-4">
                 <div className="text-2xl font-bold tracking-tight text-[var(--text)]">{MOCK_CAMPAIGN.backers}</div>
-                <div className="text-[0.68rem] text-[var(--muted)] uppercase tracking-widest mt-1">Contributors</div>
+                <div className="text-[0.68rem] text-[var(--text2)] uppercase tracking-widest mt-1">Contributors</div>
               </div>
               <div className="text-center px-4">
                 <div className="text-2xl font-bold tracking-tight text-[var(--teal)]">{MOCK_CAMPAIGN.daysLeft}d</div>
-                <div className="text-[0.68rem] text-[var(--muted)] uppercase tracking-widest mt-1">Remaining</div>
+                <div className="text-[0.68rem] text-[var(--text2)] uppercase tracking-widest mt-1">Remaining</div>
               </div>
             </div>
           </div>
 
-          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-3xl p-8">
-            <div className="flex items-center gap-2 text-[0.7rem] font-bold tracking-widest uppercase text-[var(--muted)] mb-6">
+          <div className="bg-[var(--bg)] border border-[var(--border)] rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-2 text-[0.7rem] font-bold tracking-widest uppercase text-[var(--text2)] mb-6">
               <div className="w-2 h-2 rounded-full bg-[var(--teal)] animate-pulse" />
               Live Contributions
             </div>
             
             <div className="divide-y divide-[var(--border)]">
               {MOCK_FEED.map((item, i) => (
-                <div key={i} className="py-4 flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white text-sm" style={{ backgroundColor: item.color }}>
-                    G
+                <div key={i} className="py-4 flex items-center justify-between group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[var(--surface2)] text-[var(--text)] flex items-center justify-center font-medium text-xs">
+                      {item.addr.charAt(1)}
+                    </div>
+                    <div>
+                      <div className="font-medium text-[0.8rem] text-[var(--text)] group-hover:text-[var(--teal)] transition-colors">{item.addr}</div>
+                      <div className="text-[0.7rem] text-[var(--text2)] mt-0.5">{item.time}</div>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <div className="font-mono text-[0.75rem] text-[var(--text2)]">{item.addr}</div>
-                    <div className="text-[0.65rem] text-[var(--muted)] mt-0.5">{item.time}</div>
-                  </div>
-                  <div className="text-[0.9rem] font-bold text-[var(--teal)]">{item.amt}</div>
+                  <div className="text-[0.85rem] font-semibold text-[var(--text)]">{item.amt}</div>
                 </div>
               ))}
             </div>
@@ -150,8 +152,8 @@ export default function CampaignDetail() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="relative"
         >
-          <div className="sticky top-24 bg-[var(--surface)] border border-[var(--border)] rounded-[32px] p-8">
-            <h3 className="text-[0.7rem] font-bold tracking-widest uppercase text-[var(--muted)] mb-6">Contribute</h3>
+          <div className="sticky top-24 bg-[var(--bg)] border border-[var(--border)] rounded-2xl p-6 shadow-sm">
+            <h3 className="text-[0.7rem] font-bold tracking-widest uppercase text-[var(--text2)] mb-6">Contribute</h3>
             
             <div className="mb-6">
               <label className="block text-[0.72rem] font-medium text-[var(--muted-custom)] mb-3">Quick amounts</label>
@@ -162,7 +164,7 @@ export default function CampaignDetail() {
                     variant="outline"
                     onClick={() => setAmount(preset)}
                     className={cn(
-                      "px-4 py-6 rounded-full text-[0.8rem] font-semibold border transition-all active:scale-95 hover:bg-transparent h-auto",
+                      "w-[3.25rem] h-[3.25rem] rounded-full flex items-center justify-center flex-shrink-0 p-0 text-[0.85rem] font-semibold border transition-all active:scale-95 hover:bg-transparent",
                       amount === preset 
                         ? "bg-[rgba(0,201,167,0.07)] border-[var(--teal)] text-[var(--teal)] hover:text-[var(--teal)]" 
                         : "bg-[var(--surface2)] border-[var(--border2)] text-[var(--text2)] hover:border-[var(--teal)] hover:text-[var(--text)]"
@@ -199,7 +201,7 @@ export default function CampaignDetail() {
               Awaiting Stellar confirmation...
             </div>
 
-            <div className="text-[0.7rem] leading-relaxed text-[var(--muted)] text-center pt-6 border-t border-[var(--border)]">
+            <div className="text-[0.7rem] leading-relaxed text-[var(--text2)] text-center pt-6 border-t border-[var(--border)]">
               Fee ~0.00001 XLM <br />
               Contract: <span className="font-mono text-[var(--teal)] uppercase">{MOCK_CAMPAIGN.address}</span>
             </div>

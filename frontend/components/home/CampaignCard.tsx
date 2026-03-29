@@ -45,17 +45,17 @@ export default function CampaignCard({
   };
 
   return (
-    <Link href={`/campaign/${id}`}>
+    <Link href={`/campaign/${id}`} className="block h-full">
       <motion.div
         whileHover={{ y: -4 }}
-        className="group overflow-hidden rounded-3xl bg-[var(--card-bg)] border border-[var(--border)] shadow-sm hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/20 transition-all duration-300"
+        className="group overflow-hidden rounded-3xl bg-[var(--card-bg)] border border-[var(--border)] shadow-sm hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/20 transition-all duration-300 h-full flex flex-col"
       >
-        <div className={cn("h-40 relative flex items-center justify-center overflow-hidden", artBackgrounds[artType])}>
+        <div className={cn("h-40 shrink-0 relative flex items-center justify-center overflow-hidden", artBackgrounds[artType])}>
           {renderArt(artType)}
         </div>
 
-        <div className="p-5 flex flex-col items-start">
-          <Badge className={cn("inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[0.68rem] font-bold tracking-wider uppercase border mb-3 shadow-none hover:bg-transparent transition-none", categoryStyles[category])}>
+        <div className="p-5 flex flex-col flex-1">
+          <Badge className={cn("self-start inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[0.68rem] font-bold tracking-wider uppercase border mb-3 shadow-none hover:bg-transparent transition-none", categoryStyles[category])}>
             {category}
           </Badge>
           <h3 className="text-[0.95rem] font-semibold leading-snug tracking-tight mb-2 group-hover:text-[var(--teal)] transition-colors">
@@ -65,7 +65,7 @@ export default function CampaignCard({
             {description}
           </p>
 
-          <div className="h-1 bg-[var(--border2)] rounded-full mb-2.5 overflow-hidden">
+          <div className="h-1 bg-[var(--border2)] rounded-full mb-2.5 overflow-hidden mt-auto">
             <motion.div
               initial={{ width: 0 }}
               whileInView={{ width: `${percentage}%` }}
@@ -85,11 +85,11 @@ export default function CampaignCard({
             />
           </div>
 
-          <div className="flex justify-between items-center mb-3.5">
-            <div className="text-[0.82rem] font-bold tracking-tight">
+          <div className="flex justify-between items-center mb-3.5 gap-2 w-full">
+            <div className="text-[0.82rem] font-bold tracking-tight truncate">
               {raised.toLocaleString()} <span className="text-[0.72rem] font-normal text-[var(--muted-custom)]">/ {goal.toLocaleString()} XLM</span>
             </div>
-            <div className={cn("text-[0.7rem] font-medium", daysLeft < 3 ? "text-[#E85D26] font-bold" : "text-[var(--muted-custom)]")}>
+            <div className={cn("text-[0.7rem] font-medium shrink-0 ml-auto", daysLeft < 3 ? "text-[#E85D26] font-bold" : "text-[var(--muted-custom)]")}>
               {daysLeft < 3 ? `🔥 ${daysLeft} days left` : `⏱ ${daysLeft} days left`}
             </div>
           </div>

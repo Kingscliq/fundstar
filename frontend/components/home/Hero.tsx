@@ -5,15 +5,15 @@ import Link from "next/link";
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden bg-[var(--bg-tint)] py-20 px-6 md:px-12 text-center hero-dot-grid">
-      <div className="relative z-10 max-w-2xl mx-auto">
+    <section className="relative overflow-hidden bg-[var(--bg-tint)] px-6 md:px-12 text-center hero-dot-grid min-h-[80vh] flex flex-col items-center justify-center">
+      <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center justify-center w-full py-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-[rgba(0,201,167,0.3)] bg-[rgba(0,201,167,0.07)] text-[0.72rem] font-semibold tracking-wider uppercase text-[var(--teal)] mb-8"
         >
-          ✦ Built on Soroban · Stellar Testnet
+          ✦ Global impact starts here
         </motion.div>
 
         <motion.h1
@@ -22,8 +22,8 @@ export default function Hero() {
           transition={{ duration: 0.8, delay: 0.1 }}
           className="font-serif text-5xl md:text-6xl tracking-tight leading-[1.1] text-[var(--text)] mb-6"
         >
-          Fund what matters, <br />
-          <i className="italic text-[var(--teal)] font-normal">transparently</i>
+          Crowdfunding, <br />
+          <i className="italic text-[var(--teal)] font-normal">reimagined</i>
         </motion.h1>
 
         <motion.p
@@ -32,7 +32,7 @@ export default function Hero() {
           transition={{ duration: 0.8, delay: 0.2 }}
           className="text-lg text-[var(--text2)] leading-relaxed font-light max-w-md mx-auto mb-10"
         >
-          Launch campaigns, contribute XLM, and watch progress update live as Soroban contract events stream in.
+          Support innovative projects globally. Back the next big thing safely and transparently from anywhere in the world.
         </motion.p>
 
         <motion.div
@@ -47,9 +47,9 @@ export default function Hero() {
           >
             Start a campaign →
           </Link>
-          <button className="px-6 py-3.5 rounded-full border border-[var(--border2)] text-[0.88rem] font-medium text-[var(--text2)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-all active:scale-95">
+          <Link href="/explore" className="px-6 py-3.5 rounded-full border border-[var(--border2)] text-[0.88rem] font-medium text-[var(--text2)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-all active:scale-95">
             Explore campaigns
-          </button>
+          </Link>
         </motion.div>
 
         <motion.div
