@@ -3,10 +3,18 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 
+function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).join(" ");
+}
+
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden bg-[var(--bg-tint)] px-6 md:px-12 text-center hero-dot-grid min-h-[80vh] flex flex-col items-center justify-center">
-      <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center justify-center w-full py-20">
+    <section
+      className="relative overflow-hidden bg-[var(--bg-tint)] px-4 sm:px-6 md:px-12 text-center hero-dot-grid flex flex-col items-center justify-center"
+      style={{ minHeight: "calc(100vh - 60px)" }}
+    >
+      <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center justify-center w-full py-16 sm:py-20">
+        {/* Badge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -16,70 +24,79 @@ export default function Hero() {
           ✦ Global impact starts here
         </motion.div>
 
+        {/* Headline */}
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1 }}
-          className="font-serif text-5xl md:text-6xl tracking-tight leading-[1.1] text-[var(--text)] mb-6"
+          className="font-serif text-4xl sm:text-5xl md:text-6xl tracking-tight leading-[1.1] text-[var(--text)] mb-6"
         >
-          Crowdfunding, <br />
-          <i className="italic text-[var(--teal)] font-normal">reimagined</i>
+          Fund ideas that <br />
+          <i className="italic text-[var(--teal)] font-normal">actually matter.</i>
         </motion.h1>
 
+        {/* Subtitle */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-lg text-[var(--text2)] leading-relaxed font-light max-w-md mx-auto mb-10"
+          className="text-base sm:text-lg text-[var(--text2)] leading-relaxed font-light max-w-sm mx-auto mb-10"
         >
-          Support innovative projects globally. Back the next big thing safely and transparently from anywhere in the world.
+          Back the projects you believe in — safely,
+          <br />transparently, from anywhere in the world.
         </motion.p>
 
+        {/* CTA Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="flex items-center justify-center gap-3 mb-12"
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto mb-12"
         >
           <Link
             href="/create"
-            className="px-8 py-3.5 rounded-full bg-[var(--text)] text-[var(--bg)] font-semibold text-[0.88rem] shadow-lg shadow-black/15 hover:-translate-y-0.5 hover:shadow-xl transition-all active:scale-95"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[var(--text)] text-[var(--bg)] font-semibold text-[0.88rem] shadow-lg shadow-black/15 hover:-translate-y-0.5 hover:shadow-xl transition-all active:scale-95 text-center"
           >
             Start a campaign →
           </Link>
-          <Link href="/explore" className="px-6 py-3.5 rounded-full border border-[var(--border2)] text-[0.88rem] font-medium text-[var(--text2)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-all active:scale-95">
+          <Link
+            href="/explore"
+            className="w-full sm:w-auto px-6 py-3.5 rounded-full border border-[var(--border2)] text-[0.88rem] font-medium text-[var(--text2)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-all active:scale-95 text-center"
+          >
             Explore campaigns
           </Link>
         </motion.div>
 
+        {/* Stats bar */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="inline-flex divide-x divide-[var(--border)] border border-[var(--border2)] rounded-2xl overflow-hidden bg-[var(--bg)] shadow-sm"
+          className="w-full max-w-lg"
         >
-          {[
-            { value: "4", label: "Active", color: "text-[var(--teal)]" },
-            { value: "28,400", label: "XLM Raised" },
-            { value: "47", label: "Contributors" },
-            { value: "$0.0007", label: "Per Tx", color: "text-[var(--teal)]" },
-          ].map((stat, i) => (
-            <div key={i} className="px-8 py-4 text-center">
-              <div className={cn("font-serif text-2xl leading-none", stat.color || "text-[var(--text)]")}>
-                {stat.value}
+          <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 divide-x-0 sm:divide-x divide-[var(--border)] border border-[var(--border2)] rounded-2xl overflow-hidden bg-[var(--bg)] shadow-sm">
+            {[
+              { value: "4", label: "Active", color: "text-[var(--teal)]" },
+              { value: "28,400", label: "XLM Raised" },
+              { value: "47", label: "Contributors" },
+              { value: "$0.0007", label: "Per Tx", color: "text-[var(--teal)]" },
+            ].map((stat, i) => (
+              <div key={i} className={cn(
+                "px-4 sm:px-6 py-4 text-center",
+                // Add right border on first col of mobile 2-col layout
+                i % 2 === 0 ? "border-r border-[var(--border)] sm:border-r-0" : ""
+              )}>
+                <div className={cn("font-serif text-xl sm:text-2xl leading-none", stat.color || "text-[var(--text)]")}>
+                  {stat.value}
+                </div>
+                <div className="text-[0.65rem] sm:text-[0.7rem] text-[var(--muted-custom)] mt-1 tracking-wider uppercase">
+                  {stat.label}
+                </div>
               </div>
-              <div className="text-[0.7rem] text-[var(--muted-custom)] mt-1 tracking-wider uppercase">
-                {stat.label}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </motion.div>
       </div>
     </section>
   );
-}
-
-// Utility for merging classes
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(" ");
 }

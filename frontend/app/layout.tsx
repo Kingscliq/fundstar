@@ -3,6 +3,7 @@ import { Instrument_Serif, DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
+import { WalletProvider } from "@/contexts/WalletContext";
 
 const instrumentSerif = Instrument_Serif({
   variable: "--font-instrument-serif",
@@ -38,8 +39,10 @@ export default function RootLayout({
       data-theme="light"
     >
       <body className="min-h-full flex flex-col font-sans">
-        {children}
-        <Toaster />
+        <WalletProvider>
+          {children}
+          <Toaster richColors position="top-right" />
+        </WalletProvider>
       </body>
     </html>
   );

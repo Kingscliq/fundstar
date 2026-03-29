@@ -4,14 +4,16 @@ import Navbar from '@/components/Navbar';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Calendar, DollarSign, Tag, Info, Zap } from 'lucide-react';
+import { Calendar, DollarSign, Tag, Info, Wallet } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { useWallet } from '@/contexts/WalletContext';
 
 export default function CreateCampaign() {
+  const { address, connect, isConnecting } = useWallet();
   const [formData, setFormData] = useState({
     name: 'Build a solar well in Kaduna',
     description:
@@ -210,12 +212,31 @@ export default function CreateCampaign() {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full py-7 h-auto rounded-full bg-[var(--text)] text-[var(--bg)] font-bold text-[1rem] shadow-xl shadow-black/20 hover:-translate-y-1 hover:shadow-2xl hover:bg-[var(--text)] transition-all mt-4"
-            >
-              Create Campaign
-            </Button>
+            {address ? (
+              <Button
+                type="submit"
+                className="w-full py-7 h-auto rounded-full bg-[var(--text)] text-[var(--bg)] font-bold text-[1rem] shadow-xl shadow-black/20 hover:-translate-y-1 hover:shadow-2xl hover:bg-[var(--text)] transition-all mt-4"
+              >
+                Create Campaign
+              </Button>
+            ) : (
+              <div className="mt-4 space-y-3">
+                <div className="flex items-center gap-3 p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)]">
+                  <Wallet size={16} className="text-[var(--text2)] shrink-0" />
+                  <p className="text-[0.82rem] text-[var(--text2)]">
+                    Connect your wallet to launch your campaign
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  onClick={connect}
+                  disabled={isConnecting}
+                  className="w-full py-7 h-auto rounded-full bg-[var(--text)] text-[var(--bg)] font-bold text-[1rem] shadow-xl shadow-black/20 hover:-translate-y-1 hover:shadow-2xl hover:bg-[var(--text)] transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                >
+                  {isConnecting ? "Connecting..." : "Connect Wallet to Continue"}
+                </Button>
+              </div>
+            )}
           </form>
         </motion.div>
       </div>

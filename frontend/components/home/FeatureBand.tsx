@@ -23,7 +23,7 @@ export default function FeatureBand() {
   ];
 
   return (
-    <section className="bg-[var(--dark-section)] py-16 px-6 md:px-12 grid grid-cols-1 md:grid-cols-3 gap-1 relative overflow-hidden dark-band-grid">
+    <section className="bg-[var(--dark-section)] py-12 sm:py-16 px-4 sm:px-6 md:px-12 grid grid-cols-1 md:grid-cols-3 gap-0 relative overflow-hidden dark-band-grid">
       {features.map((feature, i) => (
         <motion.div
           key={i}
@@ -31,10 +31,10 @@ export default function FeatureBand() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: i * 0.1 }}
-          className="relative z-10 p-8 md:p-10 border-r border-white/10 dark:border-black/10 last:border-r-0"
+          className="relative z-10 p-6 sm:p-8 md:p-10 border-b md:border-b-0 md:border-r border-white/10 last:border-0 md:last:border-r-0"
         >
           <div className="mb-4">{feature.icon}</div>
-          <h3 className="font-sans text-lg font-semibold text-[var(--dark-text)] mb-2 transition-colors duration-300">
+          <h3 className="font-sans text-base sm:text-lg font-semibold text-[var(--dark-text)] mb-2">
             {feature.title}
           </h3>
           <p className="text-[0.82rem] leading-relaxed font-light text-[var(--dark-text)] opacity-60">
