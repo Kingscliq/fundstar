@@ -1,0 +1,47 @@
+"use client";
+
+import { Zap, Shield, Globe } from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function FeatureBand() {
+  const features = [
+    {
+      icon: <Zap className="text-[var(--teal)] w-6 h-6" />,
+      title: "Real-time events",
+      description: "Soroban contract events stream live to the UI — every contribution updates progress instantly.",
+    },
+    {
+      icon: <Shield className="text-[var(--teal)] w-6 h-6" />,
+      title: "Non-custodial",
+      description: "You hold your keys. Funds move through smart contracts, never through a centralized server.",
+    },
+    {
+      icon: <Globe className="text-[var(--teal)] w-6 h-6" />,
+      title: "Borderless",
+      description: "Anyone with a Stellar wallet can fund any campaign. No borders, no banks, no permission needed.",
+    },
+  ];
+
+  return (
+    <section className="bg-[var(--dark-section)] py-16 px-6 md:px-12 grid grid-cols-1 md:grid-cols-3 gap-1 relative overflow-hidden dark-band-grid">
+      {features.map((feature, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: i * 0.1 }}
+          className="relative z-10 p-8 md:p-10 border-r border-white/10 dark:border-black/10 last:border-r-0"
+        >
+          <div className="mb-4">{feature.icon}</div>
+          <h3 className="font-sans text-lg font-semibold text-[var(--dark-text)] mb-2 transition-colors duration-300">
+            {feature.title}
+          </h3>
+          <p className="text-[0.82rem] leading-relaxed font-light text-[var(--dark-text)] opacity-60">
+            {feature.description}
+          </p>
+        </motion.div>
+      ))}
+    </section>
+  );
+}
