@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, String};
+use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, Env, String, Vec};
 
 /// The data structure that holds everything about a single crowdfunding campaign.
 #[contracttype]
@@ -24,6 +24,15 @@ pub enum DataKey {
     Campaign(u32),
 }
 
+#[contracterror]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum ContractError {
+    InvalidGoal = 1,
+    DeadlineMustBeFuture = 2,
+    DeadlineTooFar = 3,
+}
+
 #[contract]
 pub struct FundStarContract;
 
@@ -38,23 +47,23 @@ impl FundStarContract {
         description: String,
         goal: i128,
         deadline: u64,
-    ) -> u32 {
+    ) -> Result<u32, ContractError> {
         // Step 1: Auth enforcement
         // Verify the caller is the creator. This ensures only authorized accounts can create campaigns.
         // The host records this authorization in the invocation context.
         creator.require_auth();
 
         // Step 2: Input validation (deterministic checks, no host calls needed yet)
-        assert!(goal > 0, "goal must be greater than zero");
-        assert!(
-            deadline > env.ledger().timestamp(),
-            "deadline must be in the future"
-        );
-        // Optional: enforce reasonable campaign duration
-        assert!(
-            deadline <= env.ledger().timestamp() + 31_536_000, // ~1 year in seconds
-            "deadline too far in the future"
-        );
+        if goal <= 0 {
+            return Err(ContractError::InvalidGoal);
+        }
+        if deadline <= env.ledger().timestamp() {
+            return Err(ContractError::DeadlineMustBeFuture);
+        }
+        //    Enforce reasonable campaign duration
+        if deadline > env.ledger().timestamp() + 31_536_000 {
+            return Err(ContractError::DeadlineTooFar);
+        }
 
         // Step 3: Read the current campaign counter from persistent storage.
         // This tells us what ID the new campaign will get.
@@ -97,7 +106,7 @@ impl FundStarContract {
         );
 
         // Step 8: Return the newly created campaign ID to the caller.
-        id
+        Ok(id)
     }
 
     /// Fund a specific campaign with USDC.
@@ -111,13 +120,13 @@ impl FundStarContract {
     }
 
     /// Read-only function to fetch a campaign's data.
-    pub fn get_campaign(env: Env, campaign_id: u32) -> Campaign {
+    /// Returns Some(campaign) if found, None otherwise.
+    pub fn get_campaign(env: Env, campaign_id: u32) -> Option<Campaign> {
         // Retrieve campaign record from persistent storage by ID.
-        // If not found, panic with a descriptive error.
+        // Returns None if campaign does not exist.
         env.storage()
             .persistent()
             .get(&DataKey::Campaign(campaign_id))
-            .expect("campaign not found")
     }
 
     /// Read-only function to get the total number of campaigns created.
@@ -128,6 +137,23 @@ impl FundStarContract {
             .persistent()
             .get(&DataKey::CampaignCount)
             .unwrap_or(0)
+    }
+
+    /// Read-only function to fetch all campaigns in creation order.
+    /// TODO - switch to Indexers for faster reads - to be implemented in version 2
+    pub fn get_all_campaigns(env: Env) -> Vec<Campaign> {
+        let count = Self::get_campaign_count(env.clone());
+        let mut campaigns = Vec::new(&env);
+
+        let mut id = 0;
+        while id < count {
+            if let Some(campaign) = env.storage().persistent().get(&DataKey::Campaign(id)) {
+                campaigns.push_back(campaign);
+            }
+            id += 1;
+        }
+
+        campaigns
     }
 }
 
@@ -161,7 +187,7 @@ mod tests {
         assert_eq!(campaign_id, 0);
         assert_eq!(client.get_campaign_count(), 1);
 
-        let campaign = client.get_campaign(&campaign_id);
+        let campaign = client.get_campaign(&0).unwrap();
         assert_eq!(campaign.id, 0);
         assert_eq!(campaign.creator, creator);
         assert_eq!(campaign.goal, 1_000_000);
@@ -170,64 +196,71 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "goal must be greater than zero")]
     fn test_create_campaign_invalid_goal_zero() {
         let (env, client) = setup();
         let creator = Address::generate(&env);
 
-        client.create_campaign(
+        let result = client.try_create_campaign(
             &creator,
             &String::from_str(&env, "Bad Campaign"),
             &String::from_str(&env, "No goal"),
             &0,
             &(env.ledger().timestamp() + 86_400),
         );
+
+        assert!(matches!(result, Err(Ok(ContractError::InvalidGoal))));
     }
 
     #[test]
-    #[should_panic(expected = "goal must be greater than zero")]
     fn test_create_campaign_invalid_goal_negative() {
         let (env, client) = setup();
         let creator = Address::generate(&env);
 
-        client.create_campaign(
+        let result = client.try_create_campaign(
             &creator,
             &String::from_str(&env, "Negative Campaign"),
             &String::from_str(&env, "Weird"),
             &-1_000_000,
             &(env.ledger().timestamp() + 86_400),
         );
+
+        assert!(matches!(result, Err(Ok(ContractError::InvalidGoal))));
     }
 
     #[test]
-    #[should_panic(expected = "deadline must be in the future")]
     fn test_create_campaign_current_time_deadline() {
         let (env, client) = setup();
         let creator = Address::generate(&env);
         let now = env.ledger().timestamp();
 
-        client.create_campaign(
+        let result = client.try_create_campaign(
             &creator,
             &String::from_str(&env, "Now Campaign"),
             &String::from_str(&env, "No time"),
             &1_000_000,
             &now,
         );
+
+        assert!(matches!(
+            result,
+            Err(Ok(ContractError::DeadlineMustBeFuture))
+        ));
     }
 
     #[test]
-    #[should_panic(expected = "deadline too far in the future")]
     fn test_create_campaign_deadline_too_far() {
         let (env, client) = setup();
         let creator = Address::generate(&env);
 
-        client.create_campaign(
+        let result = client.try_create_campaign(
             &creator,
             &String::from_str(&env, "Far Campaign"),
             &String::from_str(&env, "Too far away"),
             &1_000_000,
             &(env.ledger().timestamp() + 31_536_001),
         );
+
+        assert!(matches!(result, Err(Ok(ContractError::DeadlineTooFar))));
     }
 
     #[test]
@@ -264,9 +297,9 @@ mod tests {
         assert_eq!(id3, 2);
         assert_eq!(client.get_campaign_count(), 3);
 
-        let campaign1 = client.get_campaign(&0);
-        let campaign2 = client.get_campaign(&1);
-        let campaign3 = client.get_campaign(&2);
+        let campaign1 = client.get_campaign(&0).unwrap();
+        let campaign2 = client.get_campaign(&1).unwrap();
+        let campaign3 = client.get_campaign(&2).unwrap();
         assert_eq!(campaign1.creator, creator1);
         assert_eq!(campaign2.creator, creator2);
         assert_eq!(campaign3.creator, creator3);
@@ -286,23 +319,60 @@ mod tests {
             &deadline,
         );
 
-        let campaign = client.get_campaign(&0);
+        let campaign = client.get_campaign(&0).unwrap();
         assert_eq!(campaign.amount_raised, 0);
         assert!(!campaign.is_withdrawn);
         assert_eq!(campaign.deadline, deadline);
     }
 
     #[test]
-    #[should_panic(expected = "campaign not found")]
     fn test_get_nonexistent_campaign() {
         let (_env, client) = setup();
-        client.get_campaign(&999);
+        let result = client.get_campaign(&999);
+        assert!(result.is_none());
     }
 
     #[test]
     fn test_get_campaign_count_empty() {
         let (_env, client) = setup();
         assert_eq!(client.get_campaign_count(), 0);
+    }
+
+    #[test]
+    fn test_get_all_campaigns_empty() {
+        let (_env, client) = setup();
+        let campaigns = client.get_all_campaigns();
+        assert_eq!(campaigns.len(), 0);
+    }
+
+    #[test]
+    fn test_get_all_campaigns_returns_all_in_order() {
+        let (env, client) = setup();
+        let creator1 = Address::generate(&env);
+        let creator2 = Address::generate(&env);
+
+        client.create_campaign(
+            &creator1,
+            &String::from_str(&env, "Campaign A"),
+            &String::from_str(&env, "First campaign"),
+            &100_000,
+            &(env.ledger().timestamp() + 86_400),
+        );
+
+        client.create_campaign(
+            &creator2,
+            &String::from_str(&env, "Campaign B"),
+            &String::from_str(&env, "Second campaign"),
+            &200_000,
+            &(env.ledger().timestamp() + 172_800),
+        );
+
+        let campaigns = client.get_all_campaigns();
+        assert_eq!(campaigns.len(), 2);
+        assert_eq!(campaigns.get(0).unwrap().id, 0);
+        assert_eq!(campaigns.get(0).unwrap().creator, creator1);
+        assert_eq!(campaigns.get(1).unwrap().id, 1);
+        assert_eq!(campaigns.get(1).unwrap().creator, creator2);
     }
 
     #[test]
@@ -319,7 +389,7 @@ mod tests {
             &(env.ledger().timestamp() + 86_400),
         );
 
-        let campaign = client.get_campaign(&0);
+        let campaign = client.get_campaign(&0).unwrap();
         assert_eq!(campaign.goal, max_goal);
     }
 
@@ -336,7 +406,7 @@ mod tests {
             &(env.ledger().timestamp() + 1),
         );
 
-        let campaign = client.get_campaign(&0);
+        let campaign = client.get_campaign(&0).unwrap();
         assert_eq!(campaign.goal, 1);
     }
 }
