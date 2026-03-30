@@ -174,19 +174,23 @@ Here are my screenshots for UI proofs, showcasing the completed features and on-
 
 #### 1. Multi-Wallet Selector
 Show the modal with Freighter and Albedo options.
-![Multi-Wallet Selector](https://raw.githubusercontent.com/Kingscliq/fundstar/main/screenshots/wallet-selector.png)
+![Multi-Wallet Selector](./screenshots/multi-wallet.png)
 
 #### 2. Live Activity Feed
 Capture the "Activity" tab on a campaign page showing real on-chain contributions.
-![Live Activity Feed](https://raw.githubusercontent.com/Kingscliq/fundstar/main/screenshots/activity-feed.png)
+![Live Activity Feed](./screenshots/activity-events-feeds.png)
 
 #### 3. Transaction Status
 Demonstrate the real-time feedback (Toasts) during the funding process.
-![Transaction Status](https://raw.githubusercontent.com/Kingscliq/fundstar/main/screenshots/transaction-status.png)
+![Transaction Status](./screenshots/fund-campaign.png)
 
 #### 4. Creator Dashboard
 Show the withdrawal controls visible only to the campaign owner once the goal is reached.
-![Creator Dashboard](https://raw.githubusercontent.com/Kingscliq/fundstar/main/screenshots/creator-dashboard.png)
+![Creator Dashboard](./screenshots/withdrwal-screen.png)
+
+#### 5. Wallet Connection
+Proof of successful wallet connection (Freighter) and account authorization.
+![Wallet Connected](./screenshots/reight-wallet-connected.png)
 
 ### 🚀 Key Features
 - **Dynamic Activity Feed**: Real-time updates for on-chain contributions using contract events.

@@ -51,106 +51,108 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="sticky top-0 z-20 flex items-center justify-between px-6 md:px-12 h-[60px] bg-(--nav-bg) border-b border-(--border) backdrop-blur-md transition-colors duration-300">
-      <Link href="/" className="flex items-center gap-2.5 group">
-        <svg className="w-7 h-7" viewBox="0 0 28 28" fill="none">
-          <rect width="28" height="28" rx="8" className="fill-(--text)" />
-          <path d="M8 14 L14 8 L20 14 L14 20 Z" className="fill-(--bg)" opacity="0.9" />
-          <circle cx="14" cy="14" r="3" className="fill-(--teal)" />
-        </svg>
-        <span className="font-serif text-xl tracking-tight text-(--text)">
-          Fund<em className="not-italic text-(--teal)">Star</em>
-        </span>
-      </Link>
+    <>
+      <nav className="sticky top-0 z-20 flex items-center justify-between px-6 md:px-12 h-[60px] bg-(--nav-bg) border-b border-(--border) backdrop-blur-md transition-colors duration-300">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <svg className="w-7 h-7" viewBox="0 0 28 28" fill="none">
+            <rect width="28" height="28" rx="8" className="fill-(--text)" />
+            <path d="M8 14 L14 8 L20 14 L14 20 Z" className="fill-(--bg)" opacity="0.9" />
+            <circle cx="14" cy="14" r="3" className="fill-(--teal)" />
+          </svg>
+          <span className="font-serif text-xl tracking-tight text-(--text)">
+            Fund<em className="not-italic text-(--teal)">Star</em>
+          </span>
+        </Link>
 
-      <div className="hidden md:flex bg-(--surface) p-1 rounded-xl">
-        {navLinks.map((link) => {
-          const isActive = pathname === link.href;
-          return (
-            <Link
-              key={link.name}
-              href={link.href}
-              className={cn(
-                "relative px-4 py-1.5 text-[0.82rem] font-medium transition-colors rounded-lg",
-                isActive ? "text-(--text)" : "text-(--muted-custom) hover:text-(--text)"
-              )}
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="nav-active"
-                  className="absolute inset-0 bg-(--bg) border border-(--border2) rounded-lg shadow-sm"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                />
-              )}
-              <span className="relative z-10">{link.name}</span>
-            </Link>
-          );
-        })}
-      </div>
+        <div className="hidden md:flex bg-(--surface) p-1 rounded-xl">
+          {navLinks.map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.name}
+                href={link.href}
+                className={cn(
+                  "relative px-4 py-1.5 text-[0.82rem] font-medium transition-colors rounded-lg",
+                  isActive ? "text-(--text)" : "text-(--muted-custom) hover:text-(--text)"
+                )}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="nav-active"
+                    className="absolute inset-0 bg-(--bg) border border-(--border2) rounded-lg shadow-sm"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <span className="relative z-10">{link.name}</span>
+              </Link>
+            );
+          })}
+        </div>
 
-      <div className="flex items-center gap-2.5">
-        <button
-          onClick={toggleTheme}
-          className="w-9 h-9 rounded-full border border-(--border2) bg-(--surface) flex items-center justify-center hover:bg-(--surface2) transition-all active:scale-95"
-          aria-label="Toggle theme"
-        >
-          {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
-        </button>
-
-        {address ? (
-          /* Connected state — show address + dropdown */
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setDropdownOpen((v) => !v)}
-              className="flex items-center gap-2 h-9 px-4 rounded-full bg-(--text) text-(--bg) text-[0.82rem] font-semibold hover:opacity-85 transition-all active:scale-95"
-            >
-              <div className="w-1.5 h-1.5 rounded-full bg-(--teal)" />
-              {truncateAddress(address)}
-              <ChevronDown size={13} className={cn("transition-transform", dropdownOpen && "rotate-180")} />
-            </button>
-
-            <AnimatePresence>
-              {dropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 mt-2 w-52 bg-(--bg) border border-(--border) rounded-xl shadow-lg overflow-hidden z-50"
-                >
-                  <div className="px-4 py-3 border-b border-(--border)">
-                    <p className="text-[0.68rem] text-(--text2) uppercase tracking-widest mb-1">
-                      Connected ({walletType})
-                    </p>
-                    <p className="font-mono text-[0.78rem] text-(--text) truncate">{address}</p>
-                  </div>
-                  <button
-                    onClick={() => { disconnect(); setDropdownOpen(false); }}
-                    className="flex items-center gap-2.5 w-full px-4 py-3 text-[0.82rem] text-(--text2) hover:text-(--text) hover:bg-(--surface) transition-colors"
-                  >
-                    <LogOut size={14} />
-                    Disconnect
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        ) : (
-          /* Disconnected state — trigger Freighter */
+        <div className="flex items-center gap-2.5">
           <button
-            onClick={() => setIsModalOpen(true)}
-            disabled={isConnecting}
-            className="flex items-center gap-2 h-9 px-4 rounded-full bg-(--text) text-(--bg) text-[0.82rem] font-semibold hover:opacity-85 transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+            onClick={toggleTheme}
+            className="w-9 h-9 rounded-full border border-(--border2) bg-(--surface) flex items-center justify-center hover:bg-(--surface2) transition-all active:scale-95"
+            aria-label="Toggle theme"
           >
-            {isConnecting ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : (
-              <div className="w-1.5 h-1.5 rounded-full bg-(--teal)" />
-            )}
-            {isConnecting ? "Connecting..." : "Connect Wallet"}
+            {theme === "light" ? <Moon size={16} /> : <Sun size={16} />}
           </button>
-        )}
-      </div>
+
+          {address ? (
+            /* Connected state — show address + dropdown */
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setDropdownOpen((v) => !v)}
+                className="flex items-center gap-2 h-9 px-4 rounded-full bg-(--text) text-(--bg) text-[0.82rem] font-semibold hover:opacity-85 transition-all active:scale-95"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-(--teal)" />
+                {truncateAddress(address)}
+                <ChevronDown size={13} className={cn("transition-transform", dropdownOpen && "rotate-180")} />
+              </button>
+
+              <AnimatePresence>
+                {dropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-2 w-52 bg-(--bg) border border-(--border) rounded-xl shadow-lg overflow-hidden z-50"
+                  >
+                    <div className="px-4 py-3 border-b border-(--border)">
+                      <p className="text-[0.68rem] text-(--text2) uppercase tracking-widest mb-1">
+                        Connected ({walletType})
+                      </p>
+                      <p className="font-mono text-[0.78rem] text-(--text) truncate">{address}</p>
+                    </div>
+                    <button
+                      onClick={() => { disconnect(); setDropdownOpen(false); }}
+                      className="flex items-center gap-2.5 w-full px-4 py-3 text-[0.82rem] text-(--text2) hover:text-(--text) hover:bg-(--surface) transition-colors"
+                    >
+                      <LogOut size={14} />
+                      Disconnect
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            /* Disconnected state — trigger Freighter */
+            <button
+              onClick={() => setIsModalOpen(true)}
+              disabled={isConnecting}
+              className="flex items-center gap-2 h-9 px-4 rounded-full bg-(--text) text-(--bg) text-[0.82rem] font-semibold hover:opacity-85 transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isConnecting ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <div className="w-1.5 h-1.5 rounded-full bg-(--teal)" />
+              )}
+              {isConnecting ? "Connecting..." : "Connect Wallet"}
+            </button>
+          )}
+        </div>
+      </nav>
 
       <AnimatePresence>
         {isModalOpen && (
@@ -205,6 +207,6 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </>
   );
 }

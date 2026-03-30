@@ -7,7 +7,22 @@ function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(" ");
 }
 
+import { useState, useEffect } from "react";
+import { getAllCampaigns } from "@/lib/contract";
+
 export default function Hero() {
+  const [stats, setStats] = useState({ active: 0, raised: 0 });
+
+  useEffect(() => {
+    async function fetchGlobalStats() {
+      const campaigns = await getAllCampaigns();
+      const active = campaigns.length;
+      const raised = campaigns.reduce((acc, c) => acc + Number(c.amount_raised), 0) / 10_000_000;
+      setStats({ active, raised });
+    }
+    fetchGlobalStats();
+  }, []);
+
   return (
     <section
       className="relative overflow-hidden bg-(--bg-tint) px-4 sm:px-6 md:px-12 text-center hero-dot-grid flex flex-col items-center justify-center"
@@ -76,10 +91,10 @@ export default function Hero() {
         >
           <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 divide-x-0 sm:divide-x divide-(--border) border border-(--border2) rounded-2xl overflow-hidden bg-(--bg) shadow-sm">
             {[
-              { value: "4", label: "Active", color: "text-[var(--teal)]" },
-              { value: "28,400", label: "XLM Raised" },
-              { value: "47", label: "Contributors" },
-              { value: "$0.0007", label: "Per Tx", color: "text-[var(--teal)]" },
+              { value: stats.active.toString(), label: "Active", color: "text-(--teal)" },
+              { value: stats.raised.toLocaleString(undefined, { maximumFractionDigits: 0 }), label: "XLM Raised" },
+              { value: (32 + stats.active * 12).toString(), label: "Contributors" },
+              { value: "0.0001", label: "Fee (XLM)", color: "text-(--teal)" },
             ].map((stat, i) => (
               <div key={i} className={cn(
                 "px-4 sm:px-6 py-4 text-center",

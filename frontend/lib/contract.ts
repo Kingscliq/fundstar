@@ -280,15 +280,19 @@ export async function getCampaignEvents(campaignId: number) {
     return response.events
       .map((event) => {
         const topics = event.topic.map((t) => scValToNative(t));
-        // We look for: ["fund_received", campaign_id, funder]
-        if (topics[0] === "fund_received" && Number(topics[1]) === campaignId) {
-          const amountStroops = scValToNative(event.value);
-          return {
-            funder: topics[2].toString(),
-            amount: Number(amountStroops) / 10_000_000,
-            ledger: event.ledger,
-            id: event.id,
-          };
+        
+        // Contract emits: topics = ["fundstar", "fund_received"], value = [campaign_id, funder, amount]
+        if (topics[0] === "fundstar" && topics[1] === "fund_received") {
+          const value = scValToNative(event.value);
+          
+          if (Array.isArray(value) && Number(value[0]) === campaignId) {
+            return {
+              funder: value[1].toString(),
+              amount: Number(value[2]) / 10_000_000,
+              ledger: event.ledger,
+              id: event.id,
+            };
+          }
         }
         return null;
       })
