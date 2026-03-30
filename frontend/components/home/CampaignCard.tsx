@@ -62,7 +62,7 @@ export default function CampaignCard({
     <Link href={`/campaign/${id}`} className="block h-full">
       <motion.div
         whileHover={{ y: -4 }}
-        className="group overflow-hidden rounded-3xl bg-[var(--card-bg)] border border-[var(--border)] shadow-sm hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/20 transition-all duration-300 h-full flex flex-col"
+        className="group overflow-hidden rounded-3xl bg-(--card-bg) border border-(--border) shadow-sm hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/20 transition-all duration-300 h-full flex flex-col"
       >
         <div className={cn("h-40 shrink-0 relative flex items-center justify-center overflow-hidden", artBackgrounds[artType])}>
           {renderArt(artType)}
@@ -72,14 +72,14 @@ export default function CampaignCard({
           <Badge className={cn("self-start inline-flex items-center justify-center px-2.5 py-1 rounded-full text-[0.68rem] font-bold tracking-wider uppercase border mb-3 shadow-none hover:bg-transparent transition-none", categoryStyles[category])}>
             {category}
           </Badge>
-          <h3 className="text-[0.95rem] font-semibold leading-snug tracking-tight mb-2 group-hover:text-[var(--teal)] transition-colors">
+          <h3 className="text-[0.95rem] font-semibold leading-snug tracking-tight mb-2 group-hover:text-(--teal) transition-colors">
             {name}
           </h3>
-          <p className="text-[0.78rem] text-[var(--text2)] leading-relaxed font-light mb-4 line-clamp-2">
+          <p className="text-[0.78rem] text-(--text2) leading-relaxed font-light mb-4 line-clamp-2">
             {description}
           </p>
 
-          <div className="h-1 bg-[var(--border2)] rounded-full mb-2.5 overflow-hidden mt-auto">
+          <div className="h-1 bg-(--border2) rounded-full mb-2.5 overflow-hidden mt-auto">
             <motion.div
               initial={{ width: 0 }}
               whileInView={{ width: `${percentage}%` }}
@@ -101,16 +101,16 @@ export default function CampaignCard({
 
           <div className="flex justify-between items-center mb-3.5 gap-2 w-full">
             <div className="text-[0.82rem] font-bold tracking-tight truncate">
-              {raisedNum.toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-[0.72rem] font-normal text-[var(--muted-custom)]">/ {goalNum.toLocaleString()} XLM</span>
+              {raisedNum.toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-[0.72rem] font-normal text-(--muted-custom)">/ {goalNum.toLocaleString()} XLM</span>
             </div>
-            <div className={cn("text-[0.7rem] font-medium shrink-0 ml-auto", daysLeft < 3 ? "text-[#E85D26] font-bold" : "text-[var(--muted-custom)]")}>
+            <div className={cn("text-[0.7rem] font-medium shrink-0 ml-auto", daysLeft < 3 ? "text-[#E85D26] font-bold" : "text-(--muted-custom)")}>
               {daysLeft < 3 ? `🔥 ${daysLeft} days left` : `⏱ ${daysLeft} days left`}
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-3.5 border-t border-[var(--border)]">
-            <span className="text-[0.72rem] text-[var(--muted-custom)]">{backers} backers</span>
-            <span className={cn("px-2.5 py-0.5 rounded-full text-[0.72rem] font-bold", percentage > 90 ? "bg-[#d1fae5] text-[#059669]" : "bg-[var(--surface2)] text-[var(--text2)]")}>
+          <div className="flex items-center justify-between pt-3.5 border-t border-(--border)">
+            <span className="text-[0.72rem] text-(--muted-custom)">{backers} backers</span>
+            <span className={cn("px-2.5 py-0.5 rounded-full text-[0.72rem] font-bold", percentage > 90 ? "bg-[#d1fae5] text-[#059669]" : "bg-(--surface2) text-(--text2)")}>
               {percentage}%
             </span>
           </div>
@@ -126,7 +126,7 @@ function renderArt(type: string) {
       return (
         <div className="w-full h-full p-5 flex flex-col gap-2">
           <div className="flex gap-2 items-center">
-            <div className="flex-[3] h-5 rounded-full bg-[#00c9a7]" />
+            <div className="flex-3 h-5 rounded-full bg-[#00c9a7]" />
             <div className="w-5 h-5 rounded-full bg-[#00c9a7] opacity-80" style={{ clipPath: "polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%)" }} />
             <div className="flex-[1.5] h-5 rounded-full bg-[#00e5bf] opacity-70" />
             <div className="flex-1 h-5 rounded-full bg-[#00c9a7] opacity-50" />
@@ -139,7 +139,7 @@ function renderArt(type: string) {
           </div>
           <div className="flex gap-2 items-center pl-10">
             <div className="w-5 h-5 rounded-full bg-[#00c9a7] opacity-60" style={{ clipPath: "polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%)" }} />
-            <div className="flex-[2] h-5 rounded-full bg-[#00c9a7] opacity-80" />
+            <div className="flex-2 h-5 rounded-full bg-[#00c9a7] opacity-80" />
             <div className="flex-[1.2] h-5 rounded-full bg-[#00c9a7] opacity-50" />
           </div>
         </div>

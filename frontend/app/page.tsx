@@ -39,8 +39,8 @@ export default function Home() {
 
       <section className="py-20 px-6 md:px-12 max-w-7xl mx-auto">
         <div className="flex items-baseline justify-between mb-10">
-          <h2 className="font-serif text-3xl font-normal tracking-tight">Active <i className="italic text-[var(--teal)] font-normal">campaigns</i></h2>
-          <Link href="/explore" className="text-[0.82rem] text-[var(--muted-custom)] hover:text-[var(--text)] transition-colors border-b border-[var(--border2)] pb-0.5">
+          <h2 className="font-serif text-3xl font-normal tracking-tight">Active <i className="italic text-(--teal) font-normal">campaigns</i></h2>
+          <Link href="/explore" className="text-[0.82rem] text-(--muted-custom) hover:text-(--text) transition-colors border-b border-(--border2) pb-0.5">
             See all →
           </Link>
         </div>
@@ -49,7 +49,7 @@ export default function Home() {
           {loading ? (
             // Skeleton Loader
             [...Array(4)].map((_, i) => (
-              <div key={i} className="h-[400px] rounded-3xl bg-[var(--surface)] animate-pulse border border-[var(--border)]" />
+              <div key={i} className="h-[400px] rounded-3xl bg-(--surface) animate-pulse border border-(--border)" />
             ))
           ) : campaigns.length > 0 ? (
             campaigns.map((campaign, i) => (
@@ -75,8 +75,8 @@ export default function Home() {
             ))
           ) : (
             <div className="col-span-full py-20 text-center">
-              <p className="text-[var(--text2)] font-light italic">No active campaigns yet. Be the first to create one!</p>
-              <Link href="/create" className="mt-4 inline-block text-[var(--teal)] border-b border-[var(--teal)]/30 hover:border-[var(--teal)] transition-all">
+              <p className="text-(--text2) font-light italic">No active campaigns yet. Be the first to create one!</p>
+              <Link href="/create" className="mt-4 inline-block text-(--teal) border-b border-(--teal)/30 hover:border-(--teal) transition-all">
                 Start a campaign →
               </Link>
             </div>

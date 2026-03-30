@@ -257,3 +257,45 @@ export async function pollTx(
   }
   throw new Error('Transaction timeout or not found after polling.');
 }
+
+/**
+ * Fetch recent 'fund_received' events for a specific campaign.
+ */
+export async function getCampaignEvents(campaignId: number) {
+  try {
+    const latestLedger = await server.getLatestLedger();
+    const startLedger = Math.max(0, latestLedger.sequence - 10000); // Look back ~10k ledgers
+
+    const response = await server.getEvents({
+      startLedger,
+      filters: [
+        {
+          type: "contract",
+          contractIds: [CONTRACT_ID],
+        },
+      ],
+      limit: 50,
+    });
+
+    return response.events
+      .map((event) => {
+        const topics = event.topic.map((t) => scValToNative(t));
+        // We look for: ["fund_received", campaign_id, funder]
+        if (topics[0] === "fund_received" && Number(topics[1]) === campaignId) {
+          const amountStroops = scValToNative(event.value);
+          return {
+            funder: topics[2].toString(),
+            amount: Number(amountStroops) / 10_000_000,
+            ledger: event.ledger,
+            id: event.id,
+          };
+        }
+        return null;
+      })
+      .filter((e): e is NonNullable<typeof e> => e !== null)
+      .reverse(); // Newest first
+  } catch (error) {
+    console.error("Error fetching campaign events:", error);
+    return [];
+  }
+}
