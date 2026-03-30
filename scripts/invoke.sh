@@ -16,6 +16,12 @@ fi
 #   CONTRACT_ID=<id> ./scripts/invoke.sh create_campaign \
 #     --creator fundstar --name "My Campaign" --description "Demo" --goal 1000000 --deadline 1760000000
 #
+#   CONTRACT_ID=<id> ./scripts/invoke.sh fund_campaign \
+#     --token CAS... --campaign_id 0 --funder fundstar --amount 1000000
+#
+#   CONTRACT_ID=<id> ./scripts/invoke.sh withdraw_funds \
+#     --token CAS... --campaign_id 0
+#
 # Optional args:
 #   NETWORK=testnet|mainnet (default: testnet)
 #   SOURCE_ACCOUNT=<identity|public key|secret> (default: fundstar)

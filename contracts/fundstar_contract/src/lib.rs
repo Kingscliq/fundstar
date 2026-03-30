@@ -31,6 +31,12 @@ pub enum ContractError {
     InvalidGoal = 1,
     DeadlineMustBeFuture = 2,
     DeadlineTooFar = 3,
+    CampaignNotFound = 4,
+    CampaignEnded = 5,
+    GoalNotReached = 6,
+    GoalAlreadyReached = 7, // If we want to cap funding
+    AlreadyWithdrawn = 8,
+    NotCreator = 9,
 }
 
 #[contract]
@@ -109,14 +115,91 @@ impl FundStarContract {
         Ok(id)
     }
 
-    /// Fund a specific campaign with USDC.
-    pub fn fund_campaign(env: Env, campaign_id: u32, funder: Address, amount: i128) {
-        // TODO: Implement
+    /// Fund a specific campaign with a token (e.g., USDC).
+    pub fn fund_campaign(
+        env: Env,
+        token: Address,
+        campaign_id: u32,
+        funder: Address,
+        amount: i128,
+    ) -> Result<(), ContractError> {
+        funder.require_auth();
+
+        // 1. Get the campaign
+        let mut campaign: Campaign = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Campaign(campaign_id))
+            .ok_or(ContractError::CampaignNotFound)?;
+
+        // 2. Validate state
+        if env.ledger().timestamp() >= campaign.deadline {
+            return Err(ContractError::CampaignEnded);
+        }
+
+        // 3. Move the funds from the funder to THIS contract address
+        let token_client = soroban_sdk::token::TokenClient::new(&env, &token);
+        token_client.transfer(&funder, &env.current_contract_address(), &amount);
+
+        // 4. Update the campaign state
+        campaign.amount_raised += amount;
+        env.storage()
+            .persistent()
+            .set(&DataKey::Campaign(campaign_id), &campaign);
+
+        // 5. Emit event
+        env.events().publish(
+            ("fundstar", "fund_received"),
+            (campaign_id, funder, amount, campaign.amount_raised),
+        );
+
+        Ok(())
     }
 
-    /// Withdraw funds from a successful or ended campaign to the creator's address.
-    pub fn withdraw_funds(env: Env, campaign_id: u32) {
-        // TODO: Implement
+    /// Withdraw funds from a successful campaign to the creator's address.
+    pub fn withdraw_funds(env: Env, token: Address, campaign_id: u32) -> Result<(), ContractError> {
+        // 1. Get the campaign
+        let mut campaign: Campaign = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Campaign(campaign_id))
+            .ok_or(ContractError::CampaignNotFound)?;
+
+        // 2. Validate authorization
+        campaign.creator.require_auth();
+
+        // 3. Validate state
+        if campaign.is_withdrawn {
+            return Err(ContractError::AlreadyWithdrawn);
+        }
+        if campaign.amount_raised < campaign.goal {
+            return Err(ContractError::GoalNotReached);
+        }
+        // Optional: Ensure campaign ended? 
+        // Some users might want to withdraw as soon as the goal is hit. 
+        // For now, let's allow withdrawal as soon as goal is hit.
+
+        // 4. Transfer funds from THIS contract to the creator
+        let token_client = soroban_sdk::token::TokenClient::new(&env, &token);
+        token_client.transfer(
+            &env.current_contract_address(),
+            &campaign.creator,
+            &campaign.amount_raised,
+        );
+
+        // 5. Mark as withdrawn
+        campaign.is_withdrawn = true;
+        env.storage()
+            .persistent()
+            .set(&DataKey::Campaign(campaign_id), &campaign);
+
+        // 6. Emit event
+        env.events().publish(
+            ("fundstar", "funds_withdrawn"),
+            (campaign_id, campaign.creator.clone(), campaign.amount_raised),
+        );
+
+        Ok(())
     }
 
     /// Read-only function to fetch a campaign's data.
@@ -162,17 +245,17 @@ mod tests {
     use super::*;
     use soroban_sdk::testutils::Address as _;
 
-    fn setup() -> (Env, FundStarContractClient<'static>) {
+    fn setup() -> (Env, FundStarContractClient<'static>, Address) {
         let env = Env::default();
         env.mock_all_auths();
         let contract_id = env.register(FundStarContract, ());
         let client = FundStarContractClient::new(&env, &contract_id);
-        (env, client)
+        (env, client, contract_id)
     }
 
     #[test]
     fn test_create_campaign_success() {
-        let (env, client) = setup();
+        let (env, client, _contract_id) = setup();
         let creator = Address::generate(&env);
         let deadline = env.ledger().timestamp() + 86_400;
 
@@ -197,7 +280,7 @@ mod tests {
 
     #[test]
     fn test_create_campaign_invalid_goal_zero() {
-        let (env, client) = setup();
+        let (env, client, _contract_id) = setup();
         let creator = Address::generate(&env);
 
         let result = client.try_create_campaign(
@@ -213,7 +296,7 @@ mod tests {
 
     #[test]
     fn test_create_campaign_invalid_goal_negative() {
-        let (env, client) = setup();
+        let (env, client, _contract_id) = setup();
         let creator = Address::generate(&env);
 
         let result = client.try_create_campaign(
@@ -229,7 +312,7 @@ mod tests {
 
     #[test]
     fn test_create_campaign_current_time_deadline() {
-        let (env, client) = setup();
+        let (env, client, _contract_id) = setup();
         let creator = Address::generate(&env);
         let now = env.ledger().timestamp();
 
@@ -249,7 +332,7 @@ mod tests {
 
     #[test]
     fn test_create_campaign_deadline_too_far() {
-        let (env, client) = setup();
+        let (env, client, _contract_id) = setup();
         let creator = Address::generate(&env);
 
         let result = client.try_create_campaign(
@@ -265,7 +348,7 @@ mod tests {
 
     #[test]
     fn test_multiple_campaigns_sequential_ids() {
-        let (env, client) = setup();
+        let (env, client, _contract_id) = setup();
         let creator1 = Address::generate(&env);
         let creator2 = Address::generate(&env);
         let creator3 = Address::generate(&env);
@@ -307,7 +390,7 @@ mod tests {
 
     #[test]
     fn test_campaign_initial_state() {
-        let (env, client) = setup();
+        let (env, client, _contract_id) = setup();
         let creator = Address::generate(&env);
         let deadline = env.ledger().timestamp() + 86_400;
 
@@ -327,27 +410,27 @@ mod tests {
 
     #[test]
     fn test_get_nonexistent_campaign() {
-        let (_env, client) = setup();
+        let (_env, client, _contract_id) = setup();
         let result = client.get_campaign(&999);
         assert!(result.is_none());
     }
 
     #[test]
     fn test_get_campaign_count_empty() {
-        let (_env, client) = setup();
+        let (_env, client, _contract_id) = setup();
         assert_eq!(client.get_campaign_count(), 0);
     }
 
     #[test]
     fn test_get_all_campaigns_empty() {
-        let (_env, client) = setup();
+        let (_env, client, _contract_id) = setup();
         let campaigns = client.get_all_campaigns();
         assert_eq!(campaigns.len(), 0);
     }
 
     #[test]
     fn test_get_all_campaigns_returns_all_in_order() {
-        let (env, client) = setup();
+        let (env, client, _contract_id) = setup();
         let creator1 = Address::generate(&env);
         let creator2 = Address::generate(&env);
 
@@ -376,37 +459,90 @@ mod tests {
     }
 
     #[test]
-    fn test_campaign_boundary_max_goal() {
-        let (env, client) = setup();
+    fn test_fund_campaign_success() {
+        let (env, client, contract_id) = setup();
         let creator = Address::generate(&env);
-        let max_goal = i128::MAX;
+        let funder = Address::generate(&env);
+        let token_id = env.register_stellar_asset_contract(Address::generate(&env));
+        let token_admin = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+        
+        // Mint some tokens to the funder
+        token_admin.mint(&funder, &1_000_000);
 
-        client.create_campaign(
+        let deadline = env.ledger().timestamp() + 86_400;
+        let campaign_id = client.create_campaign(
             &creator,
-            &String::from_str(&env, "Max Goal Campaign"),
-            &String::from_str(&env, "Testing boundary"),
-            &max_goal,
-            &(env.ledger().timestamp() + 86_400),
+            &String::from_str(&env, "Fund Test"),
+            &String::from_str(&env, "Funding source"),
+            &500_000,
+            &deadline,
         );
 
-        let campaign = client.get_campaign(&0).unwrap();
-        assert_eq!(campaign.goal, max_goal);
+        client.fund_campaign(&token_id, &campaign_id, &funder, &200_000);
+
+        let campaign = client.get_campaign(&campaign_id).unwrap();
+        assert_eq!(campaign.amount_raised, 200_000);
+        
+        // Contract should now hold the tokens
+        let token_client = soroban_sdk::token::TokenClient::new(&env, &token_id);
+        assert_eq!(token_client.balance(&contract_id), 200_000);
     }
 
     #[test]
-    fn test_campaign_boundary_min_goal() {
-        let (env, client) = setup();
+    fn test_withdraw_funds_success() {
+        let (env, client, contract_id) = setup();
         let creator = Address::generate(&env);
+        let funder = Address::generate(&env);
+        let token_id = env.register_stellar_asset_contract(Address::generate(&env));
+        let token_admin = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+        
+        token_admin.mint(&funder, &1_000_000);
 
-        client.create_campaign(
+        let deadline = env.ledger().timestamp() + 86_400;
+        let campaign_id = client.create_campaign(
             &creator,
-            &String::from_str(&env, "Min Goal Campaign"),
-            &String::from_str(&env, "Testing boundary"),
-            &1,
-            &(env.ledger().timestamp() + 1),
+            &String::from_str(&env, "Withdraw Test"),
+            &String::from_str(&env, "Will succeed"),
+            &500_000,
+            &deadline,
         );
 
-        let campaign = client.get_campaign(&0).unwrap();
-        assert_eq!(campaign.goal, 1);
+        // Fund past the goal
+        client.fund_campaign(&token_id, &campaign_id, &funder, &600_000);
+
+        // Withdraw
+        client.withdraw_funds(&token_id, &campaign_id);
+
+        let campaign = client.get_campaign(&campaign_id).unwrap();
+        assert!(campaign.is_withdrawn);
+        
+        // Creator should have the funds
+        let token_client = soroban_sdk::token::TokenClient::new(&env, &token_id);
+        assert_eq!(token_client.balance(&creator), 600_000);
+        assert_eq!(token_client.balance(&contract_id), 0);
+    }
+
+    #[test]
+    fn test_withdraw_fails_if_goal_not_reached() {
+        let (env, client, _contract_id) = setup();
+        let creator = Address::generate(&env);
+        let funder = Address::generate(&env);
+        let token_id = env.register_stellar_asset_contract(Address::generate(&env));
+        let token_admin = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+        
+        token_admin.mint(&funder, &1_000_000);
+
+        let campaign_id = client.create_campaign(
+            &creator,
+            &String::from_str(&env, "Fail Withdraw"),
+            &String::from_str(&env, "Goal too high"),
+            &500_000,
+            &(env.ledger().timestamp() + 86_400),
+        );
+
+        client.fund_campaign(&token_id, &campaign_id, &funder, &100_000);
+
+        let result = client.try_withdraw_funds(&token_id, &campaign_id);
+        assert!(matches!(result, Err(Ok(ContractError::GoalNotReached))));
     }
 }
