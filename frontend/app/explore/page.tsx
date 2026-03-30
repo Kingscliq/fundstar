@@ -25,6 +25,7 @@ import {
   Columns,
   MoreVertical,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const CATEGORIES: ("Education" | "Art" | "Tech" | "Environment")[] = ["Education", "Art", "Tech", "Environment"];
 
@@ -103,11 +104,15 @@ export default function ExplorePage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  [...Array(5)].map((_, i) => (
-                    <TableRow key={i} className="animate-pulse">
-                      <TableCell colSpan={7} className="h-16 pr-0">
-                        <div className="w-full h-8 bg-(--surface) rounded-md" />
-                      </TableCell>
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-5 w-[80%]" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-24 rounded-full" /></TableCell>
+                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-16" /></TableCell>
+                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-12" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-8 rounded-full" /></TableCell>
                     </TableRow>
                   ))
                 ) : campaigns.length > 0 ? (
