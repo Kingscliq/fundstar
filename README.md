@@ -1,6 +1,7 @@
-# FundStar (Soroban Crowdfunding Contract)
-
 FundStar is a Soroban smart contract for creating and reading crowdfunding campaigns.
+
+### 🌐 Live Deployment
+**[fundstar.vercel.app](https://fundstar.vercel.app/)**
 
 This repository includes helper scripts so users can run the project without manually typing long CLI commands.
 
