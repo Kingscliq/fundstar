@@ -25,6 +25,10 @@ const dmMono = DM_Mono({
 export const metadata: Metadata = {
   title: "FundStar | Fund what matters, transparently",
   description: "Transparent, borderless crowdfunding for the world's most innovative ideas.",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
