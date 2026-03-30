@@ -193,11 +193,53 @@ Show the withdrawal controls visible only to the campaign owner once the goal is
 Proof of successful wallet connection (Freighter) and account authorization.
 ![Wallet Connected](./screenshots/reight-wallet-connected.png)
 
+#### 6. Smart Contract Test Output
+Verified results showing 14/14 automated tests passing in the Rust environment.
+![Smart Contract Test Output](./screenshots/test-screenshot.png)
+
 ### 🚀 Key Features
+- **Zero-Lag Caching**: In-memory caching for instantaneous navigation and zero-lag transition between pages.
+- **High-Fidelity Skeletons**: Standardized skeleton loaders for a smooth, professional loading experience.
 - **Dynamic Activity Feed**: Real-time updates for on-chain contributions using contract events.
 - **Smart Wallet Routing**: Automatic detection and choice between Freighter and Albedo.
 - **Creator Controls**: Role-based access for campaign creators to withdraw funds once goals are reached.
-- **Premium UI**: Modern, glassmorphic design with full light/dark mode support.
+
+## 🟠 Level 3 - Orange Belt Submission
+
+FundStar has been upgraded to meet the high standards of the Level 3 (Orange Belt) graduation.
+
+### ✅ Level 3 Requirements
+- [x] **Mini-dApp fully functional**: Deployed and tested on Stellar Testnet.
+- [x] **Minimum 3 tests passing**: 14 comprehensive contract tests passing (see below).
+- [x] **Loading states and progress indicators**: Implemented high-fidelity **Skeleton Loaders** for all data grids and detail views.
+- [x] **Basic caching implementation**: Integrated a **Zero-Lag Caching Layer** in the frontend for instantaneous navigation.
+- [x] **README complete**: All documentation, test results, and demo placeholders included.
+
+### 🎥 Demo Video
+[Watch the 1-minute demo video](https://www.loom.com/share/695d03e93cc743b8b52e1d4bb752740c)
+
+### 🧪 Test Output (14 Passing)
+FundStar uses a robust testing suite in Rust to ensure the safety of all crowdfunding operations.
+
+```bash
+running 14 tests
+test tests::test_create_campaign_current_time_deadline ... ok
+test tests::test_create_campaign_invalid_goal_zero ... ok
+test tests::test_get_campaign_count_empty ... ok
+test tests::test_create_campaign_deadline_too_far ... ok
+test tests::test_create_campaign_invalid_goal_negative ... ok
+test tests::test_get_all_campaigns_empty ... ok
+test tests::test_get_nonexistent_campaign ... ok
+test tests::test_create_campaign_success ... ok
+test tests::test_campaign_initial_state ... ok
+test tests::test_get_all_campaigns_returns_all_in_order ... ok
+test tests::test_multiple_campaigns_sequential_ids ... ok
+test tests::test_fund_campaign_success ... ok
+test tests::test_withdraw_fails_if_goal_not_reached ... ok
+test tests::test_withdraw_funds_success ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+```
 
 ## Security Notes
 

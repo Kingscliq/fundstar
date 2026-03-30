@@ -21,6 +21,7 @@ import {
 import { Campaign } from "@/lib/types";
 import { useWallet } from "@/contexts/WalletContext";
 import { rpc } from "@stellar/stellar-sdk";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const CATEGORIES: ("Education" | "Art" | "Tech" | "Environment")[] = ["Education", "Art", "Tech", "Environment"];
 
@@ -200,12 +201,19 @@ export default function CampaignDetail() {
     return (
       <main className="flex-1 bg-(--bg)">
         <Navbar />
-        <div className="max-w-6xl mx-auto px-6 py-20 text-center">
-          <div className="animate-pulse flex flex-col items-center">
-            <div className="w-full h-64 bg-[var(--surface)] rounded-[32px] mb-8" />
-            <div className="w-2/3 h-12 bg-[var(--surface)] rounded-lg mb-4" />
-            <div className="w-1/2 h-6 bg-[var(--surface)] rounded-lg" />
+        <div className="max-w-6xl mx-auto px-6 md:px-12 py-12 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-12">
+          <div className="space-y-10">
+            <Skeleton className="w-24 h-5 rounded-full" />
+            <Skeleton className="w-full h-[280px] md:h-[340px] rounded-[32px]" />
+            <div className="space-y-4">
+              <Skeleton className="w-32 h-8 rounded-full" />
+              <Skeleton className="w-full h-12" />
+              <Skeleton className="w-2/3 h-6" />
+            </div>
           </div>
+          <aside className="space-y-6 pt-16">
+            <Skeleton className="w-full h-96 rounded-2xl" />
+          </aside>
         </div>
       </main>
     );

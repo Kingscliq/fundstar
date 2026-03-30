@@ -24,6 +24,44 @@ const DUMMY_ACCOUNT = new Account(SIGNER_ADDRESS, '0');
 const server = new rpc.Server(RPC_URL);
 const contract = new Contract(CONTRACT_ID);
 
+// --- Persistent Caching Layer ---
+const CACHE_TTL = 60_000; // 60 seconds
+
+function saveToCache(key: string, data: any) {
+  if (typeof window === 'undefined') return;
+  const entry = {
+    data,
+    timestamp: Date.now(),
+  };
+  // Custom JSON stringifier to handle BigInt
+  const serialized = JSON.stringify(entry, (key, value) =>
+    typeof value === 'bigint' ? value.toString() + 'n' : value
+  );
+  sessionStorage.setItem(`fundstar_${key}`, serialized);
+}
+
+function getFromCache(key: string) {
+  if (typeof window === 'undefined') return null;
+  const raw = sessionStorage.getItem(`fundstar_${key}`);
+  if (!raw) return null;
+
+  try {
+    // Custom JSON parser to handle BigInt
+    const entry = JSON.parse(raw, (key, value) =>
+      typeof value === 'string' && value.endsWith('n')
+        ? BigInt(value.slice(0, -1))
+        : value
+    );
+
+    if (Date.now() - entry.timestamp < CACHE_TTL) {
+      return entry.data;
+    }
+  } catch (e) {
+    console.error('Cache parsing error:', e);
+  }
+  return null;
+}
+
 /**
  * Common formatting for Campaign native values returned by Soroban.
  */
@@ -70,10 +108,20 @@ async function simulateCall(functionName: string, ...args: any[]) {
  * Fetch all campaigns from the contract.
  */
 export async function getAllCampaigns(): Promise<Campaign[]> {
+  const cacheKey = 'all_campaigns';
+  const cached = getFromCache(cacheKey);
+
+  if (cached) {
+    console.log('[Cache] Returning persistent campaigns');
+    return cached;
+  }
+
   try {
     const nativeValues = await simulateCall('get_all_campaigns');
     if (Array.isArray(nativeValues)) {
-      return nativeValues.map(formatCampaign);
+      const data = nativeValues.map(formatCampaign);
+      saveToCache(cacheKey, data);
+      return data;
     }
     return [];
   } catch (error) {
@@ -86,13 +134,23 @@ export async function getAllCampaigns(): Promise<Campaign[]> {
  * Fetch a single campaign by ID.
  */
 export async function getCampaignById(id: number): Promise<Campaign | null> {
+  const cacheKey = `campaign_${id}`;
+  const cached = getFromCache(cacheKey);
+
+  if (cached) {
+    console.log(`[Cache] Returning persistent campaign ${id}`);
+    return cached;
+  }
+
   try {
     const nativeValue = await simulateCall(
       'get_campaign',
       nativeToScVal(id, { type: 'u32' }),
     );
     if (nativeValue) {
-      return formatCampaign(nativeValue);
+      const data = formatCampaign(nativeValue);
+      saveToCache(cacheKey, data);
+      return data;
     }
     return null;
   } catch (error) {
