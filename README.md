@@ -246,3 +246,19 @@ test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fin
 1. Commit scripts (`scripts/contract.sh`, `scripts/invoke.sh`)
 2. Do not commit `.env` with secrets
 3. Keep private keys and seed phrases out of repository files
+
+---
+
+## 🟢 Level 4 - Green Belt Planning Roadmap (In Progress)
+
+### 🎯 What We Want to Achieve
+For the Level 4 submission, we are upgrading the smart contract from a single isolated unit to a production-ready Web3 network. We are focusing on advanced interacting applications.
+
+1. **Custom Token Creation (`STAR` Rewards):** We will deploy a new token contract to represent loyalty points.
+2. **Inter-Contract Interactions:** We will modify the FundStar contract so that when a user funds a campaign, it makes a cross-contract call to the `STAR` token to mint rewards directly to their address.
+3. **CI/CD Pipeline Setup:** We will set up a GitHub Actions workflow that automatically tests and builds your smart contracts and frontend whenever code is pushed.
+
+### ✅ What is Already Available
+- **Live Demo Link:** FundStar is fully deployed and accessible on Vercel.
+- **Mobile Responsive Design:** Built using modern Tailwind CSS framework, it’s already completely responsive (We will add a screenshot to prove this).
+- **Advanced Event Streaming (Real-time):** Your frontend already listens to on-chain `fund_received` events to dynamically update campaign totals.

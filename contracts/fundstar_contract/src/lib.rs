@@ -111,7 +111,6 @@ impl FundStarContract {
             (id, creator, goal, deadline),
         );
 
-        // Step 8: Return the newly created campaign ID to the caller.
         Ok(id)
     }
 
@@ -175,9 +174,6 @@ impl FundStarContract {
         if campaign.amount_raised < campaign.goal {
             return Err(ContractError::GoalNotReached);
         }
-        // Optional: Ensure campaign ended? 
-        // Some users might want to withdraw as soon as the goal is hit. 
-        // For now, let's allow withdrawal as soon as goal is hit.
 
         // 4. Transfer funds from THIS contract to the creator
         let token_client = soroban_sdk::token::TokenClient::new(&env, &token);
@@ -196,13 +192,16 @@ impl FundStarContract {
         // 6. Emit event
         env.events().publish(
             ("fundstar", "funds_withdrawn"),
-            (campaign_id, campaign.creator.clone(), campaign.amount_raised),
+            (
+                campaign_id,
+                campaign.creator.clone(),
+                campaign.amount_raised,
+            ),
         );
 
         Ok(())
     }
 
-    /// Read-only function to fetch a campaign's data.
     /// Returns Some(campaign) if found, None otherwise.
     pub fn get_campaign(env: Env, campaign_id: u32) -> Option<Campaign> {
         // Retrieve campaign record from persistent storage by ID.
@@ -212,7 +211,6 @@ impl FundStarContract {
             .get(&DataKey::Campaign(campaign_id))
     }
 
-    /// Read-only function to get the total number of campaigns created.
     pub fn get_campaign_count(env: Env) -> u32 {
         // Retrieve the campaign counter. This is the total number of campaigns created.
         // If no campaigns exist yet, default to 0.
@@ -222,7 +220,6 @@ impl FundStarContract {
             .unwrap_or(0)
     }
 
-    /// Read-only function to fetch all campaigns in creation order.
     /// TODO - switch to Indexers for faster reads - to be implemented in version 2
     pub fn get_all_campaigns(env: Env) -> Vec<Campaign> {
         let count = Self::get_campaign_count(env.clone());
@@ -465,7 +462,7 @@ mod tests {
         let funder = Address::generate(&env);
         let token_id = env.register_stellar_asset_contract(Address::generate(&env));
         let token_admin = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
-        
+
         // Mint some tokens to the funder
         token_admin.mint(&funder, &1_000_000);
 
@@ -482,7 +479,7 @@ mod tests {
 
         let campaign = client.get_campaign(&campaign_id).unwrap();
         assert_eq!(campaign.amount_raised, 200_000);
-        
+
         // Contract should now hold the tokens
         let token_client = soroban_sdk::token::TokenClient::new(&env, &token_id);
         assert_eq!(token_client.balance(&contract_id), 200_000);
@@ -495,7 +492,7 @@ mod tests {
         let funder = Address::generate(&env);
         let token_id = env.register_stellar_asset_contract(Address::generate(&env));
         let token_admin = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
-        
+
         token_admin.mint(&funder, &1_000_000);
 
         let deadline = env.ledger().timestamp() + 86_400;
@@ -515,7 +512,7 @@ mod tests {
 
         let campaign = client.get_campaign(&campaign_id).unwrap();
         assert!(campaign.is_withdrawn);
-        
+
         // Creator should have the funds
         let token_client = soroban_sdk::token::TokenClient::new(&env, &token_id);
         assert_eq!(token_client.balance(&creator), 600_000);
@@ -529,7 +526,7 @@ mod tests {
         let funder = Address::generate(&env);
         let token_id = env.register_stellar_asset_contract(Address::generate(&env));
         let token_admin = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
-        
+
         token_admin.mint(&funder, &1_000_000);
 
         let campaign_id = client.create_campaign(
