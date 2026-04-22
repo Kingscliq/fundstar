@@ -7,6 +7,8 @@ import { Moon, Sun, LogOut, ChevronDown, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useWallet } from "@/contexts/WalletContext";
+import { getRewardBalance } from "@/lib/contract";
+import { Star } from "lucide-react";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -15,6 +17,7 @@ export default function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { address, isConnecting, walletType, connect, disconnect } = useWallet();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [rewardBalance, setRewardBalance] = useState<number | null>(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
@@ -23,6 +26,15 @@ export default function Navbar() {
       document.documentElement.setAttribute("data-theme", savedTheme);
     }
   }, []);
+
+  // Fetch reward balance when address changes
+  useEffect(() => {
+    if (address) {
+      getRewardBalance(address).then(setRewardBalance);
+    } else {
+      setRewardBalance(null);
+    }
+  }, [address]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -100,7 +112,19 @@ export default function Navbar() {
 
           {address ? (
             /* Connected state — show address + dropdown */
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative flex items-center gap-2" ref={dropdownRef}>
+              {rewardBalance !== null && (
+                <motion.div 
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="flex items-center gap-1.5 px-3 h-9 rounded-full bg-(--surface) border border-(--border2) text-[0.82rem] font-medium text-(--text)"
+                >
+                  <Star size={13} className="text-(--teal) fill-(--teal)" />
+                  <span>{rewardBalance}</span>
+                  <span className="text-[0.65rem] text-(--text2) font-bold uppercase tracking-wider ml-0.5">Star</span>
+                </motion.div>
+              )}
+              
               <button
                 onClick={() => setDropdownOpen((v) => !v)}
                 className="flex items-center gap-2 h-9 px-4 rounded-full bg-(--text) text-(--bg) text-[0.82rem] font-semibold hover:opacity-85 transition-all active:scale-95"

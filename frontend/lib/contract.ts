@@ -15,6 +15,7 @@ const RPC_URL =
   process.env.NEXT_PUBLIC_SOROBAN_RPC_URL ||
   'https://soroban-testnet.stellar.org';
 const CONTRACT_ID = process.env.NEXT_PUBLIC_FUNDSTAR_CONTRACT_ID || '';
+const REWARD_TOKEN_ID = process.env.NEXT_PUBLIC_REWARD_TOKEN_ID || '';
 const NETWORK_PASSPHRASE = Networks.TESTNET;
 
 // Actual signer account from environment for more accurate simulations
@@ -23,6 +24,7 @@ const DUMMY_ACCOUNT = new Account(SIGNER_ADDRESS, '0');
 
 const server = new rpc.Server(RPC_URL);
 const contract = new Contract(CONTRACT_ID);
+const rewardContract = new Contract(REWARD_TOKEN_ID);
 
 // --- Persistent Caching Layer ---
 const CACHE_TTL = 60_000; // 60 seconds
@@ -81,12 +83,12 @@ function formatCampaign(val: any): Campaign {
 /**
  * Helper to simulate a contract call for read-only operations.
  */
-async function simulateCall(functionName: string, ...args: any[]) {
+async function simulateCall(targetContract: Contract, functionName: string, ...args: any[]) {
   const tx = new TransactionBuilder(DUMMY_ACCOUNT, {
     fee: BASE_FEE,
     networkPassphrase: NETWORK_PASSPHRASE,
   })
-    .addOperation(contract.call(functionName, ...args))
+    .addOperation(targetContract.call(functionName, ...args))
     .setTimeout(180)
     .build();
 
@@ -117,7 +119,7 @@ export async function getAllCampaigns(): Promise<Campaign[]> {
   }
 
   try {
-    const nativeValues = await simulateCall('get_all_campaigns');
+    const nativeValues = await simulateCall(contract, 'get_all_campaigns');
     if (Array.isArray(nativeValues)) {
       const data = nativeValues.map(formatCampaign);
       saveToCache(cacheKey, data);
@@ -144,6 +146,7 @@ export async function getCampaignById(id: number): Promise<Campaign | null> {
 
   try {
     const nativeValue = await simulateCall(
+      contract,
       'get_campaign',
       nativeToScVal(id, { type: 'u32' }),
     );
@@ -160,11 +163,36 @@ export async function getCampaignById(id: number): Promise<Campaign | null> {
 }
 
 /**
+ * Fetch the reward token balance (STAR) for an address.
+ */
+export async function getRewardBalance(address: string): Promise<number> {
+  if (!REWARD_TOKEN_ID) return 0;
+  
+  const cacheKey = `reward_${address}`;
+  const cached = getFromCache(cacheKey);
+  if (cached !== null) return cached;
+
+  try {
+    const nativeValue = await simulateCall(
+      rewardContract,
+      'balance',
+      Address.fromString(address).toScVal(),
+    );
+    const balance = nativeValue ? Number(nativeValue) : 0;
+    saveToCache(cacheKey, balance);
+    return balance;
+  } catch (error) {
+    console.error(`Error fetching reward balance for ${address}:`, error);
+    return 0;
+  }
+}
+
+/**
  * Get total campaign count.
  */
 export async function getCampaignCount(): Promise<number> {
   try {
-    const nativeValue = await simulateCall('get_campaign_count');
+    const nativeValue = await simulateCall(contract, 'get_campaign_count');
     return nativeValue ? Number(nativeValue) : 0;
   } catch (error) {
     console.error('Error fetching campaign count:', error);
