@@ -1,0 +1,61 @@
+name: FundStar CI
+
+on:
+  push:
+    branches: [ main, master, level-belt-3.0, level-belt-4.0 ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-contracts:
+    name: Test Smart Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build Reward Token (Dependency)
+        run: stellar contract build --package reward_token
+
+      - name: Run Contract Tests
+        run: cargo test
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Build Next.js
+        run: |
+          cd frontend
+          npm run build
+        env:
+          NEXT_PUBLIC_SOROBAN_RPC_URL: "https://soroban-testnet.stellar.org"
+          NEXT_PUBLIC_FUNDSTAR_CONTRACT_ID: "CAOAJBZA5JI5QSF3LY2QCVGHDIFQW5PQ7KBIE2JPUY6NBVWZYHDW4VCQ"

@@ -1,6 +1,10 @@
 #![no_std]
 use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, Env, String, Vec};
 
+mod reward_token {
+    soroban_sdk::contractimport!(file = "../../target/wasm32v1-none/release/reward_token.wasm");
+}
+
 /// The data structure that holds everything about a single crowdfunding campaign.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -22,6 +26,8 @@ pub enum DataKey {
     CampaignCount,
     /// Used to store individual campaigns by their ID (Value: Campaign)
     Campaign(u32),
+    /// The address of the STAR reward token (Value: Address)
+    RewardToken,
 }
 
 #[contracterror]
@@ -44,6 +50,16 @@ pub struct FundStarContract;
 
 #[contractimpl]
 impl FundStarContract {
+    /// Initialize the contract with the reward token address.
+    pub fn init(env: Env, reward_token: Address) {
+        if env.storage().instance().has(&DataKey::RewardToken) {
+            panic!("Already initialized");
+        }
+        env.storage()
+            .instance()
+            .set(&DataKey::RewardToken, &reward_token);
+    }
+
     /// Create a new campaign.
     /// Returns the ID of the newly created campaign.
     pub fn create_campaign(
@@ -146,7 +162,22 @@ impl FundStarContract {
             .persistent()
             .set(&DataKey::Campaign(campaign_id), &campaign);
 
-        // 5. Emit event
+        // 5. Mint Reward Tokens (Inter-contract Call)
+        // If a reward token is configured, mint 10% of the funding amount as STAR tokens.
+        if let Some(reward_token_addr) = env
+            .storage()
+            .instance()
+            .get::<_, Address>(&DataKey::RewardToken)
+        {
+            let reward_amount = amount / 10;
+            if reward_amount > 0 {
+                // Using the imported reward_token client which has the 'mint' function
+                let reward_client = reward_token::Client::new(&env, &reward_token_addr);
+                reward_client.mint(&funder, &reward_amount);
+            }
+        }
+
+        // 6. Emit event
         env.events().publish(
             ("fundstar", "fund_received"),
             (campaign_id, funder, amount, campaign.amount_raised),
