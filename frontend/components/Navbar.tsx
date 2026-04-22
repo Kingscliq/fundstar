@@ -131,25 +131,26 @@ export default function Navbar() {
             /* Connected state — show address + dropdown */
             <div className="relative flex items-center gap-2" ref={dropdownRef}>
               {rewardBalance !== null && (
-                <motion.div
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center gap-1.5 px-3 h-9 rounded-full bg-(--surface) border border-(--border2) text-[0.82rem] font-medium text-(--text)"
-                >
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-(--surface) border border-(--border2) transition-all hover:border-(--teal)/30 group">
                   <Star size={13} className="text-(--teal) fill-(--teal)" />
-                  <span>{rewardBalance}</span>
-                  <span className="text-[0.65rem] text-(--text2) font-bold uppercase tracking-wider ml-0.5">
-                    Star
-                  </span>
-                </motion.div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[0.72rem] font-bold tracking-tight">
+                      {rewardBalance}
+                    </span>
+                    <span className="text-[0.6rem] font-medium text-(--muted-custom) uppercase tracking-widest hidden xs:inline">
+                      STAR
+                    </span>
+                  </div>
+                </div>
               )}
 
               <button
                 onClick={() => setDropdownOpen(v => !v)}
-                className="flex items-center gap-2 h-9 px-4 rounded-full bg-(--text) text-(--bg) text-[0.82rem] font-semibold hover:opacity-85 transition-all active:scale-95"
+                className="flex items-center gap-2 h-9 px-3 sm:px-4 rounded-full bg-(--text) text-(--bg) text-[0.82rem] font-semibold hover:opacity-85 transition-all active:scale-95"
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-(--teal)" />
-                {truncateAddress(address)}
+                <span className="hidden sm:inline">{truncateAddress(address)}</span>
+                <span className="sm:hidden">{address.slice(0, 3)}..{address.slice(-2)}</span>
                 <ChevronDown
                   size={13}
                   className={cn(
@@ -162,11 +163,11 @@ export default function Navbar() {
               <AnimatePresence>
                 {dropdownOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-52 bg-(--bg) border border-(--border) rounded-xl shadow-lg overflow-hidden z-50"
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="absolute right-0 top-full mt-3 w-60 bg-(--bg) border border-(--border) rounded-2xl shadow-xl shadow-black/10 overflow-hidden z-50 origin-top-right"
                   >
                     <div className="px-4 py-3 border-b border-(--border)">
                       <p className="text-[0.68rem] text-(--text2) uppercase tracking-widest mb-1">
