@@ -70,15 +70,18 @@ export default function ExplorePage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-(--border) text-[0.85rem] font-medium hover:bg-(--surface) transition-colors">
-              <Columns size={16} /> Customize Columns
+          <div className="flex w-full flex-col gap-3 min-[480px]:w-auto min-[480px]:flex-row min-[480px]:items-center">
+            <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-(--border) px-4 py-3 text-[0.85rem] font-medium whitespace-nowrap hover:bg-(--surface) transition-colors min-[480px]:w-auto min-[480px]:py-2">
+              <Columns size={16} />
+              <span className="min-[480px]:hidden">Customize</span>
+              <span className="hidden min-[480px]:inline">Customize Columns</span>
             </button>
             <Link
               href="/create"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-(--border) text-[0.85rem] font-medium bg-(--text) text-(--bg) hover:opacity-90 transition-opacity"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-(--border) bg-(--text) px-4 py-3 text-[0.85rem] font-medium text-(--bg) whitespace-nowrap hover:opacity-90 transition-opacity min-[480px]:w-auto min-[480px]:py-2"
             >
-              Create Campaign
+              <span className="min-[480px]:hidden">Create</span>
+              <span className="hidden min-[480px]:inline">Create Campaign</span>
             </Link>
           </div>
         </motion.div>
