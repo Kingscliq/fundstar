@@ -28,8 +28,13 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: Install Stellar CLI
+        run: |
+          curl -sSfL https://release.stellar.org/stellar-cli/install.sh | sh -s -- --to ./
+          echo "$(pwd)" >> $GITHUB_PATH
+
       - name: Build Reward Token (Dependency)
-        run: stellar contract build --package reward_token
+        run: ./stellar contract build --package reward_token
 
       - name: Run Contract Tests
         run: cargo test
