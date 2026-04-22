@@ -20,6 +20,16 @@ This document outlines the "Senior-level" improvements required to transition Fu
 
 ## 🏗️ State & Lifecycle Management
 
+### 3. Campaign Management & Investor Protection
+While the current system allows for creation and funding, a production-grade DApp requires a graceful "exit" strategy for failed or disputed campaigns.
+
+*   **Campaign Cancellation**: Implement a `cancel_campaign` function restricted to the creator. This should change the campaign state to `Cancelled`, preventing further funding.
+*   **On-Chain Refund System**: If a campaign is cancelled or fails to hit its goal by the deadline, a `claim_refund` function should be available. This is more complex than it sounds, as it requires tracking individual contributions in a `Map` or `Persistent` storage to ensure each user gets back exactly what they sent.
+*   **Admin Circuit Breaker**: For extreme cases (security issues), a contract admin should have the power to pause all funding and withdrawals globally.
+
+### 4. Storage & Performance (Version 2)
+As the number of campaigns grows, the current `get_all_campaigns` loop will become expensive in terms of gas (XLM).
+
 ### Issue #3: Automated Rent Bumping (Storage Persistence)
 - **Problem**: Soroban data has an expiration. If a campaign is long-lived and nobody interacts with it, its data will be archived, breaking the contract.
 - **Solution**: Integrate `env.storage().persistent().extend_ttl()` inside the `fund_campaign` function to automatically extend the campaign's life every time it is interacted with.

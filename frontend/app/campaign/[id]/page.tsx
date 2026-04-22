@@ -127,8 +127,11 @@ export default function CampaignDetail() {
           description: `You successfully funded ${campaign.name} with ${amount} XLM.`,
         });
         
-        // Refresh campaign data
-        const updated = await getCampaignById(campaign.id);
+        // Signal the Navbar to refresh STAR rewards immediately (bypass cache)
+        window.dispatchEvent(new CustomEvent('refresh-rewards'));
+
+        // Refresh campaign data from blockchain (bypass cache)
+        const updated = await getCampaignById(campaign.id, true);
         if (updated) setCampaign(updated);
       } else {
         throw new Error("Transaction failed on-chain.");
@@ -179,8 +182,8 @@ export default function CampaignDetail() {
           description: "Resources have been transferred to your wallet.",
         });
         
-        // Refresh campaign
-        const updated = await getCampaignById(campaign.id);
+        // Refresh campaign (bypass cache)
+        const updated = await getCampaignById(campaign.id, true);
         if (updated) setCampaign(updated);
       } else {
         throw new Error("Transaction failed on-chain.");
@@ -239,7 +242,85 @@ export default function CampaignDetail() {
   const nowSec = Math.floor(Date.now() / 1000);
   const daysLeft = Math.max(0, Math.ceil((deadlineSec - nowSec) / 86400));
   
-  const category = CATEGORIES[campaign.id % CATEGORIES.length];
+  const category = CATEGORIES[campaignId % CATEGORIES.length];
+  const ART_TYPES: ("pills" | "circles" | "semis" | "health")[] = ["pills", "circles", "semis", "health"];
+  const artType = ART_TYPES[campaignId % ART_TYPES.length];
+
+  const artBackgrounds = {
+    pills: "bg-[#e6faf6]",
+    circles: "bg-[#fef9ee]",
+    semis: "bg-[#f0f4ff]",
+    health: "bg-[#fffbeb]",
+  };
+
+  function renderArt(type: string) {
+    switch (type) {
+      case "pills":
+        return (
+          <div className="w-full h-full p-8 flex flex-col gap-3">
+            <div className="flex gap-3 items-center">
+              <div className="flex-3 h-8 rounded-full bg-[#00c9a7]" />
+              <div className="w-8 h-8 rounded-full bg-[#00c9a7] opacity-80" style={{ clipPath: "polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%)" }} />
+              <div className="flex-[1.5] h-8 rounded-full bg-[#00e5bf] opacity-70" />
+              <div className="flex-1 h-8 rounded-full bg-[#00c9a7] opacity-50" />
+            </div>
+            <div className="flex gap-3 items-center pl-10">
+              <div className="flex-1 h-8 rounded-full bg-[#00c9a7] opacity-50" />
+              <div className="flex-[2.5] h-8 rounded-full bg-[#00e5bf] opacity-70" />
+              <div className="w-8 h-8 rounded-full bg-[#00c9a7] opacity-80" style={{ clipPath: "polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%)" }} />
+              <div className="flex-[1.5] h-8 rounded-full bg-[#00c9a7]" />
+            </div>
+          </div>
+        );
+      case "circles":
+        return (
+          <svg width="240" height="200" viewBox="0 0 160 130" className="mt-auto">
+            <circle cx="20" cy="110" r="16" fill="#e85d26" opacity="0.9" />
+            <circle cx="52" cy="110" r="16" fill="#e85d26" opacity="0.75" />
+            <circle cx="84" cy="110" r="16" fill="#f0a07a" opacity="0.9" />
+            <circle cx="116" cy="110" r="16" fill="#f0a07a" opacity="0.75" />
+            <circle cx="148" cy="110" r="16" fill="#e85d26" opacity="0.6" />
+            <circle cx="36" cy="78" r="16" fill="#e85d26" opacity="0.8" />
+            <circle cx="68" cy="78" r="16" fill="#f0a07a" opacity="0.9" />
+            <circle cx="100" cy="78" r="16" fill="#e85d26" opacity="0.7" />
+            <circle cx="132" cy="78" r="16" fill="#f0a07a" opacity="0.6" />
+            <circle cx="52" cy="46" r="16" fill="#e85d26" opacity="0.75" />
+            <circle cx="84" cy="46" r="16" fill="#f0a07a" opacity="0.8" />
+            <circle cx="116" cy="46" r="16" fill="#e85d26" opacity="0.65" />
+            <circle cx="84" cy="14" r="16" fill="#e85d26" opacity="0.9" />
+          </svg>
+        );
+      case "semis":
+        return (
+          <div className="flex items-center gap-8">
+            <svg width="140" height="140" viewBox="0 0 90 90">
+              <path d="M45 0 A45 45 0 0 1 90 45 L45 45 Z" fill="#4f7bff" opacity="0.9" />
+              <path d="M0 45 A45 45 0 0 1 45 0 L45 45 Z" fill="#7ba8ff" opacity="0.7" />
+              <path d="M45 90 A45 45 0 0 1 0 45 L45 45 Z" fill="#4f7bff" opacity="0.5" />
+              <path d="M90 45 A45 45 0 0 1 45 90 L45 45 Z" fill="#7ba8ff" opacity="0.8" />
+              <circle cx="45" cy="45" r="18" fill="#f0f4ff" />
+            </svg>
+            <svg width="100" height="100" viewBox="0 0 60 60" className="mt-10">
+              <path d="M30 0 A30 30 0 0 1 60 30 L30 30 Z" fill="#c084fc" opacity="0.85" />
+              <path d="M0 30 A30 30 0 0 1 30 0 L30 30 Z" fill="#a855f7" opacity="0.6" />
+              <path d="M30 60 A30 30 0 0 1 0 30 L30 30 Z" fill="#c084fc" opacity="0.7" />
+              <path d="M60 30 A30 30 0 0 1 30 60 L30 30 Z" fill="#a855f7" opacity="0.9" />
+              <circle cx="30" cy="30" r="12" fill="#f0f4ff" />
+            </svg>
+          </div>
+        );
+      case "health":
+        return (
+          <svg width="220" height="180" viewBox="0 0 140 110">
+            <path d="M10 100 A60 60 0 0 1 130 100 Z" fill="#fbbf24" opacity="0.85" />
+            <path d="M25 100 A45 45 0 0 1 115 100 Z" fill="#fde68a" opacity="0.9" />
+            <path d="M40 100 A30 30 0 0 1 100 100 Z" fill="#fffbeb" />
+            <circle cx="70" cy="60" r="18" fill="#f59e0b" opacity="0.9" />
+            <circle cx="70" cy="60" r="10" fill="#fbbf24" />
+          </svg>
+        );
+    }
+  }
 
   return (
     <main className="flex-1 bg-(--bg)">
@@ -259,17 +340,8 @@ export default function CampaignDetail() {
             Back to campaigns
           </button>
 
-          <div className="h-[280px] md:h-[340px] rounded-[32px] overflow-hidden bg-[#e6faf6] mb-10 flex items-center justify-center relative">
-            <svg width="100%" height="100%" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice">
-              <rect width="320" height="200" fill="#e6faf6"/>
-              <rect x="20" y="60" width="160" height="28" rx="14" fill="#00c9a7" opacity="0.9"/>
-              <circle cx="190" cy="74" r="14" fill="#00c9a7" opacity="0.6"/>
-              <rect x="210" y="60" width="70" height="28" rx="14" fill="#00e5bf" opacity="0.75"/>
-              <rect x="40" y="102" width="90" height="28" rx="14" fill="#00e5bf" opacity="0.7"/>
-              <circle cx="144" cy="116" r="14" fill="#00c9a7" opacity="0.5"/>
-              <rect x="168" y="102" width="120" height="28" rx="14" fill="#00c9a7" opacity="0.8"/>
-              <rect x="60" y="144" width="180" height="20" rx="10" fill="#00c9a7" opacity="0.4"/>
-            </svg>
+          <div className={cn("h-[280px] md:h-[340px] rounded-[32px] overflow-hidden mb-10 flex items-center justify-center relative", artBackgrounds[artType])}>
+            {renderArt(artType)}
           </div>
 
           <Badge className="px-3 py-1 rounded-full text-[0.72rem] font-bold tracking-wider uppercase bg-[#d1fae5] text-[#065f46] hover:bg-[#d1fae5] border-[#a7f3d0] mb-5">

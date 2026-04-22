@@ -19,7 +19,9 @@ const REWARD_TOKEN_ID = process.env.NEXT_PUBLIC_REWARD_TOKEN_ID || '';
 const NETWORK_PASSPHRASE = Networks.TESTNET;
 
 // Actual signer account from environment for more accurate simulations
-const SIGNER_ADDRESS = process.env.NEXT_PUBLIC_FUNDSTAR_SIGNER_ADDRESS || 'GBFT5JB6HAFI25ALRTDGUXVSI53XS7UISM72SS3LWHYNMSJYHAZLGVN4';
+const SIGNER_ADDRESS =
+  process.env.NEXT_PUBLIC_FUNDSTAR_SIGNER_ADDRESS ||
+  'GBFT5JB6HAFI25ALRTDGUXVSI53XS7UISM72SS3LWHYNMSJYHAZLGVN4';
 const DUMMY_ACCOUNT = new Account(SIGNER_ADDRESS, '0');
 
 const server = new rpc.Server(RPC_URL);
@@ -37,7 +39,7 @@ function saveToCache(key: string, data: any) {
   };
   // Custom JSON stringifier to handle BigInt
   const serialized = JSON.stringify(entry, (key, value) =>
-    typeof value === 'bigint' ? value.toString() + 'n' : value
+    typeof value === 'bigint' ? value.toString() + 'n' : value,
   );
   sessionStorage.setItem(`fundstar_${key}`, serialized);
 }
@@ -48,11 +50,11 @@ function getFromCache(key: string) {
   if (!raw) return null;
 
   try {
-    // Custom JSON parser to handle BigInt
+    // Stricter regex to ensure we only convert actual numeric BigInt strings (e.g., "100n")
     const entry = JSON.parse(raw, (key, value) =>
-      typeof value === 'string' && value.endsWith('n')
+      typeof value === 'string' && /^-?\d+n$/.test(value)
         ? BigInt(value.slice(0, -1))
-        : value
+        : value,
     );
 
     if (Date.now() - entry.timestamp < CACHE_TTL) {
@@ -83,7 +85,11 @@ function formatCampaign(val: any): Campaign {
 /**
  * Helper to simulate a contract call for read-only operations.
  */
-async function simulateCall(targetContract: Contract, functionName: string, ...args: any[]) {
+async function simulateCall(
+  targetContract: Contract,
+  functionName: string,
+  ...args: any[]
+) {
   const tx = new TransactionBuilder(DUMMY_ACCOUNT, {
     fee: BASE_FEE,
     networkPassphrase: NETWORK_PASSPHRASE,
@@ -109,13 +115,14 @@ async function simulateCall(targetContract: Contract, functionName: string, ...a
 /**
  * Fetch all campaigns from the contract.
  */
-export async function getAllCampaigns(): Promise<Campaign[]> {
+export async function getAllCampaigns(forceRefresh = false): Promise<Campaign[]> {
   const cacheKey = 'all_campaigns';
-  const cached = getFromCache(cacheKey);
-
-  if (cached) {
-    console.log('[Cache] Returning persistent campaigns');
-    return cached;
+  if (!forceRefresh) {
+    const cached = getFromCache(cacheKey);
+    if (cached) {
+      console.log('[Cache] Returning persistent campaigns');
+      return cached;
+    }
   }
 
   try {
@@ -135,13 +142,14 @@ export async function getAllCampaigns(): Promise<Campaign[]> {
 /**
  * Fetch a single campaign by ID.
  */
-export async function getCampaignById(id: number): Promise<Campaign | null> {
+export async function getCampaignById(id: number, forceRefresh = false): Promise<Campaign | null> {
   const cacheKey = `campaign_${id}`;
-  const cached = getFromCache(cacheKey);
-
-  if (cached) {
-    console.log(`[Cache] Returning persistent campaign ${id}`);
-    return cached;
+  if (!forceRefresh) {
+    const cached = getFromCache(cacheKey);
+    if (cached) {
+      console.log(`[Cache] Returning persistent campaign ${id}`);
+      return cached;
+    }
   }
 
   try {
@@ -165,12 +173,17 @@ export async function getCampaignById(id: number): Promise<Campaign | null> {
 /**
  * Fetch the reward token balance (STAR) for an address.
  */
-export async function getRewardBalance(address: string): Promise<number> {
+export async function getRewardBalance(
+  address: string,
+  forceRefresh = false,
+): Promise<number> {
   if (!REWARD_TOKEN_ID) return 0;
-  
+
   const cacheKey = `reward_${address}`;
-  const cached = getFromCache(cacheKey);
-  if (cached !== null) return cached;
+  if (!forceRefresh) {
+    const cached = getFromCache(cacheKey);
+    if (cached !== null) return cached;
+  }
 
   try {
     const nativeValue = await simulateCall(
@@ -178,7 +191,8 @@ export async function getRewardBalance(address: string): Promise<number> {
       'balance',
       Address.fromString(address).toScVal(),
     );
-    const balance = nativeValue ? Number(nativeValue) : 0;
+    // Convert from raw stroops (7 decimals) to human-readable STAR tokens
+    const balance = nativeValue ? Number(nativeValue) / 10_000_000 : 0;
     saveToCache(cacheKey, balance);
     return balance;
   } catch (error) {
@@ -236,7 +250,10 @@ export async function prepareCreateCampaignTx(
   if (rpc.Api.isSimulationSuccess(simulated)) {
     return rpc.assembleTransaction(tx, simulated).build();
   }
-  throw new Error('Simulation failed');
+
+  console.error('Create Campaign Simulation Failed:', simulated);
+  const simError = (simulated as any).error || 'Check console for details';
+  throw new Error(`Simulation failed: ${simError}`);
 }
 
 /**
@@ -249,7 +266,8 @@ export async function prepareFundCampaignTx(
   amountXlm: number,
 ) {
   const tokenAddress = process.env.NEXT_PUBLIC_TOKEN_CONTRACT_ID;
-  if (!tokenAddress) throw new Error("NEXT_PUBLIC_TOKEN_CONTRACT_ID is missing");
+  if (!tokenAddress)
+    throw new Error('NEXT_PUBLIC_TOKEN_CONTRACT_ID is missing');
 
   const amountStroops = BigInt(Math.floor(amountXlm * 10_000_000));
 
@@ -285,7 +303,8 @@ export async function prepareWithdrawFundsTx(
   creator: string,
 ) {
   const tokenAddress = process.env.NEXT_PUBLIC_TOKEN_CONTRACT_ID;
-  if (!tokenAddress) throw new Error("NEXT_PUBLIC_TOKEN_CONTRACT_ID is missing");
+  if (!tokenAddress)
+    throw new Error('NEXT_PUBLIC_TOKEN_CONTRACT_ID is missing');
 
   const account = await server.getAccount(creator);
   const tx = new TransactionBuilder(account, {
@@ -318,7 +337,8 @@ export async function submitTx(signedTxXdr: string) {
   if (result.status === 'ERROR') {
     console.error('RPC Submission Error:', {
       status: result.status,
-      errorResultXdr: result.errorResult?.toXDR?.() || JSON.stringify(result.errorResult),
+      errorResultXdr:
+        result.errorResult?.toXDR?.() || JSON.stringify(result.errorResult),
       hash: result.hash,
       diagnosticEvents: result.diagnosticEvents,
     });
@@ -356,7 +376,7 @@ export async function getCampaignEvents(campaignId: number) {
       startLedger,
       filters: [
         {
-          type: "contract",
+          type: 'contract',
           contractIds: [CONTRACT_ID],
         },
       ],
@@ -364,13 +384,13 @@ export async function getCampaignEvents(campaignId: number) {
     });
 
     return response.events
-      .map((event) => {
-        const topics = event.topic.map((t) => scValToNative(t));
-        
+      .map(event => {
+        const topics = event.topic.map(t => scValToNative(t));
+
         // Contract emits: topics = ["fundstar", "fund_received"], value = [campaign_id, funder, amount]
-        if (topics[0] === "fundstar" && topics[1] === "fund_received") {
+        if (topics[0] === 'fundstar' && topics[1] === 'fund_received') {
           const value = scValToNative(event.value);
-          
+
           if (Array.isArray(value) && Number(value[0]) === campaignId) {
             return {
               funder: value[1].toString(),
@@ -385,7 +405,7 @@ export async function getCampaignEvents(campaignId: number) {
       .filter((e): e is NonNullable<typeof e> => e !== null)
       .reverse(); // Newest first
   } catch (error) {
-    console.error("Error fetching campaign events:", error);
+    console.error('Error fetching campaign events:', error);
     return [];
   }
 }
