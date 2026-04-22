@@ -1,6 +1,10 @@
 #![no_std]
 use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, Env, String, Vec};
 
+mod reward_token {
+    soroban_sdk::contractimport!(file = "../../target/wasm32v1-none/release/reward_token.wasm");
+}
+
 /// The data structure that holds everything about a single crowdfunding campaign.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -22,6 +26,8 @@ pub enum DataKey {
     CampaignCount,
     /// Used to store individual campaigns by their ID (Value: Campaign)
     Campaign(u32),
+    /// The address of the STAR reward token (Value: Address)
+    RewardToken,
 }
 
 #[contracterror]
@@ -44,6 +50,16 @@ pub struct FundStarContract;
 
 #[contractimpl]
 impl FundStarContract {
+    /// Initialize the contract with the reward token address.
+    pub fn init(env: Env, reward_token: Address) {
+        if env.storage().instance().has(&DataKey::RewardToken) {
+            panic!("Already initialized");
+        }
+        env.storage()
+            .instance()
+            .set(&DataKey::RewardToken, &reward_token);
+    }
+
     /// Create a new campaign.
     /// Returns the ID of the newly created campaign.
     pub fn create_campaign(
@@ -111,7 +127,6 @@ impl FundStarContract {
             (id, creator, goal, deadline),
         );
 
-        // Step 8: Return the newly created campaign ID to the caller.
         Ok(id)
     }
 
@@ -147,7 +162,22 @@ impl FundStarContract {
             .persistent()
             .set(&DataKey::Campaign(campaign_id), &campaign);
 
-        // 5. Emit event
+        // 5. Mint Reward Tokens (Inter-contract Call)
+        // If a reward token is configured, mint 10% of the funding amount as STAR tokens.
+        if let Some(reward_token_addr) = env
+            .storage()
+            .instance()
+            .get::<_, Address>(&DataKey::RewardToken)
+        {
+            let reward_amount = amount / 10;
+            if reward_amount > 0 {
+                // Using the imported reward_token client which has the 'mint' function
+                let reward_client = reward_token::Client::new(&env, &reward_token_addr);
+                reward_client.mint(&funder, &reward_amount);
+            }
+        }
+
+        // 6. Emit event
         env.events().publish(
             ("fundstar", "fund_received"),
             (campaign_id, funder, amount, campaign.amount_raised),
@@ -175,9 +205,6 @@ impl FundStarContract {
         if campaign.amount_raised < campaign.goal {
             return Err(ContractError::GoalNotReached);
         }
-        // Optional: Ensure campaign ended? 
-        // Some users might want to withdraw as soon as the goal is hit. 
-        // For now, let's allow withdrawal as soon as goal is hit.
 
         // 4. Transfer funds from THIS contract to the creator
         let token_client = soroban_sdk::token::TokenClient::new(&env, &token);
@@ -196,13 +223,16 @@ impl FundStarContract {
         // 6. Emit event
         env.events().publish(
             ("fundstar", "funds_withdrawn"),
-            (campaign_id, campaign.creator.clone(), campaign.amount_raised),
+            (
+                campaign_id,
+                campaign.creator.clone(),
+                campaign.amount_raised,
+            ),
         );
 
         Ok(())
     }
 
-    /// Read-only function to fetch a campaign's data.
     /// Returns Some(campaign) if found, None otherwise.
     pub fn get_campaign(env: Env, campaign_id: u32) -> Option<Campaign> {
         // Retrieve campaign record from persistent storage by ID.
@@ -212,7 +242,6 @@ impl FundStarContract {
             .get(&DataKey::Campaign(campaign_id))
     }
 
-    /// Read-only function to get the total number of campaigns created.
     pub fn get_campaign_count(env: Env) -> u32 {
         // Retrieve the campaign counter. This is the total number of campaigns created.
         // If no campaigns exist yet, default to 0.
@@ -222,7 +251,6 @@ impl FundStarContract {
             .unwrap_or(0)
     }
 
-    /// Read-only function to fetch all campaigns in creation order.
     /// TODO - switch to Indexers for faster reads - to be implemented in version 2
     pub fn get_all_campaigns(env: Env) -> Vec<Campaign> {
         let count = Self::get_campaign_count(env.clone());
@@ -465,7 +493,7 @@ mod tests {
         let funder = Address::generate(&env);
         let token_id = env.register_stellar_asset_contract(Address::generate(&env));
         let token_admin = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
-        
+
         // Mint some tokens to the funder
         token_admin.mint(&funder, &1_000_000);
 
@@ -482,7 +510,7 @@ mod tests {
 
         let campaign = client.get_campaign(&campaign_id).unwrap();
         assert_eq!(campaign.amount_raised, 200_000);
-        
+
         // Contract should now hold the tokens
         let token_client = soroban_sdk::token::TokenClient::new(&env, &token_id);
         assert_eq!(token_client.balance(&contract_id), 200_000);
@@ -495,7 +523,7 @@ mod tests {
         let funder = Address::generate(&env);
         let token_id = env.register_stellar_asset_contract(Address::generate(&env));
         let token_admin = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
-        
+
         token_admin.mint(&funder, &1_000_000);
 
         let deadline = env.ledger().timestamp() + 86_400;
@@ -515,7 +543,7 @@ mod tests {
 
         let campaign = client.get_campaign(&campaign_id).unwrap();
         assert!(campaign.is_withdrawn);
-        
+
         // Creator should have the funds
         let token_client = soroban_sdk::token::TokenClient::new(&env, &token_id);
         assert_eq!(token_client.balance(&creator), 600_000);
@@ -529,7 +557,7 @@ mod tests {
         let funder = Address::generate(&env);
         let token_id = env.register_stellar_asset_contract(Address::generate(&env));
         let token_admin = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
-        
+
         token_admin.mint(&funder, &1_000_000);
 
         let campaign_id = client.create_campaign(
@@ -544,5 +572,42 @@ mod tests {
 
         let result = client.try_withdraw_funds(&token_id, &campaign_id);
         assert!(matches!(result, Err(Ok(ContractError::GoalNotReached))));
+    }
+
+    #[test]
+    fn test_reward_minting_on_funding() {
+        let (env, client, _contract_id) = setup();
+        let creator = Address::generate(&env);
+        let funder = Address::generate(&env);
+        
+        // 1. Setup Reward Token
+        let reward_token_id = env.register_contract_wasm(None, reward_token::WASM);
+        let reward_client = reward_token::Client::new(&env, &reward_token_id);
+        reward_client.init(&_contract_id, &String::from_str(&env, "Star Rewards"), &soroban_sdk::Symbol::new(&env, "STAR"));
+
+        // 2. Setup FundStar Handshake
+        client.init(&reward_token_id);
+
+        // 3. Setup XLM Token (Mock)
+        let token_id = env.register_stellar_asset_contract(Address::generate(&env));
+        let token_admin = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+        token_admin.mint(&funder, &1_000_000);
+
+        // 4. Create and Fund Campaign
+        let deadline = env.ledger().timestamp() + 86_400;
+        let campaign_id = client.create_campaign(
+            &creator,
+            &String::from_str(&env, "Reward Test"),
+            &String::from_str(&env, "Rewards Proof"),
+            &500_000,
+            &deadline,
+        );
+
+        // Fund with 100,000 XLM
+        client.fund_campaign(&token_id, &campaign_id, &funder, &100_000);
+
+        // 5. Verify Rewards (10% of 100,000 = 10,000 STAR)
+        let rewards = reward_client.balance(&funder);
+        assert_eq!(rewards, 10_000);
     }
 }

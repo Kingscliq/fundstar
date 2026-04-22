@@ -67,7 +67,8 @@ export default function CreateCampaign() {
       const signResult = await sign(tx.toXDR());
       
       if (signResult.error || !signResult.signedTxXdr) {
-        throw new Error(signResult.error || "Signing cancelled");
+        const signError = typeof signResult.error === 'object' ? JSON.stringify(signResult.error) : signResult.error;
+        throw new Error(signError || "Signing cancelled");
       }
 
       // 3. Submit to network
@@ -102,9 +103,10 @@ export default function CreateCampaign() {
 
     } catch (error: any) {
       console.error("Creation error:", error);
+      const errorDescription = error instanceof Error ? error.message : JSON.stringify(error);
       toast.error("Failed to create campaign", {
         id: "create-toast",
-        description: error.message || "An error occurred during the transaction.",
+        description: errorDescription || "An error occurred during the transaction.",
       });
     } finally {
       setIsSubmitting(false);

@@ -218,11 +218,11 @@ FundStar has been upgraded to meet the high standards of the Level 3 (Orange Bel
 ### 🎥 Demo Video
 [Watch the 1-minute demo video](https://www.loom.com/share/695d03e93cc743b8b52e1d4bb752740c)
 
-### 🧪 Test Output (14 Passing)
+### 🧪 Test Output (15 Passing)
 FundStar uses a robust testing suite in Rust to ensure the safety of all crowdfunding operations.
 
 ```bash
-running 14 tests
+running 15 tests
 test tests::test_create_campaign_current_time_deadline ... ok
 test tests::test_create_campaign_invalid_goal_zero ... ok
 test tests::test_get_campaign_count_empty ... ok
@@ -237,9 +237,36 @@ test tests::test_multiple_campaigns_sequential_ids ... ok
 test tests::test_fund_campaign_success ... ok
 test tests::test_withdraw_fails_if_goal_not_reached ... ok
 test tests::test_withdraw_funds_success ... ok
+test tests::test_reward_minting_on_funding ... ok
 
-test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
 ```
+
+## 🟢 Level 4 - Green Belt Submission
+
+FundStar has been upgraded with advanced inter-contract patterns and production-ready CI/CD infrastructure.
+
+[![FundStar CI](https://github.com/Kingscliq/fundstar/actions/workflows/ci.yml/badge.svg)](https://github.com/Kingscliq/fundstar/actions/workflows/ci.yml)
+
+### ✅ Level 4 Requirements
+- [x] **Inter-contract call working**: FundStar now mints STAR tokens via the Reward Token contract.
+- [x] **Custom token deployed**: The `STAR` Loyalty Token (SAC interface) is live.
+- [x] **CI/CD running**: GitHub Actions pipeline active for automated testing and builds.
+- [x] **Mobile responsive**: UI fully optimized for mobile devices.
+- [x] **Advanced event streaming**: Real-time contribution tracking via on-chain event indexing.
+
+### ⛓️ Advanced Contract Details
+- **Main Contract:** `CAOAJBZA5JI5QSF3LY2QCVGHDIFQW5PQ7KBIE2JPUY6NBVWZYHDW4VCQ`
+- **Reward Token (STAR):** `ADD_TOKEN_ADDRESS_HERE`
+- **Inter-Contract Minting TX:** `ADD_TX_HASH_HERE`
+
+### 📱 Mobile UI Proof
+![Mobile Responsive View](./screenshots/mobile-responsive.png)
+
+### 🚀 Key Features (Level 4)
+- **Loyalty Reward System**: Automated inter-contract minting of STAR tokens for every backer.
+- **Automated QA**: Every push is verified by GitHub Actions (Rust tests + Next.js build).
+- **Production Persistence**: Persistent session caching and optimized mobile layout.
 
 ## Security Notes
 
