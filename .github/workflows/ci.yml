@@ -29,10 +29,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install Stellar CLI
-        run: |
-          mkdir -p ${{ github.workspace }}/bin
-          curl -sSfL https://release.stellar.org/stellar-cli/install.sh | sh -s -- --to ${{ github.workspace }}/bin
-          echo "${{ github.workspace }}/bin" >> $GITHUB_PATH
+        uses: stellar/stellar-cli@v23.3.0
 
       - name: Build Reward Token (Dependency)
         run: stellar contract build --package reward_token
