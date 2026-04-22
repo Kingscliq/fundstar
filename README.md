@@ -155,17 +155,18 @@ You likely deployed an old Wasm artifact. Re-run:
 This project fulfills all requirements for the FundStar Level 2 bounty.
 
 ### ✅ Submission Checklist
-- [x] **3 error types handled**: `CampaignNotFound`, `GoalNotReached`, `InsufficientFunds` (Token-level).
-- [x] **Contract deployed on testnet**: Live at `CAOAJBZA5JI5QSF3LY2QCVGHDIFQW5PQ7KBIE2JPUY6NBVWZYHDW4VCQ`.
+- [x] **3 error cases handled**: `CampaignNotFound`, `GoalNotReached`, and token-level insufficient-balance failures surfaced through transaction simulation/submission.
+- [x] **Contract deployed on testnet**: Live at `CDZIHKUBUJ3F6W6E2NRWP5JZXNBZP4O4PASBRQGW4FODFWK6I3PTDWE7`.
 - [x] **Contract called from the frontend**: Integrated using `stellar-sdk` and signature-based transactions.
 - [x] **Transaction status visible**: Real-time toast notifications for preparation, signing, submission, and finalization.
 - [x] **Minimum 2+ meaningful commits**: Multiple logical commits covering contract logic, frontend integration, and multi-wallet support.
-- [x] **Multi-wallet support**: Integrated both **Freighter** and **Albedo** wallet providers.
+- [x] **Multi-wallet support**: Wallet selector includes both **Freighter** and **Albedo**, with Freighter wired as the primary signing flow.
 - [x] **Real-time activity feed**: Implemented `getCampaignEvents` to stream contract events for live contribution updates.
 
 ### 📜 Contract Information
-- **Contract ID**: `CAOAJBZA5JI5QSF3LY2QCVGHDIFQW5PQ7KBIE2JPUY6NBVWZYHDW4VCQ`
-- **Deployment Hash**: [`87dca0cd31c52fff10a00e4f7e32bd493de6f231bd411bdb6edae744d61e3dee`](https://stellar.expert/explorer/testnet/tx/87dca0cd31c52fff10a00e4f7e32bd493de6f231bd411bdb6edae744d61e3dee)
+- **Contract ID**: `CDZIHKUBUJ3F6W6E2NRWP5JZXNBZP4O4PASBRQGW4FODFWK6I3PTDWE7`
+- **Reward Token (STAR):** `CBERWLOGNDQGNCAJIF44D46HQ3PP5LAKO3FXIGZQJODRS3RCC7CZKTRD`
+- **Configured From:** `frontend/.env`
 - **Network**: Stellar Testnet
 - **Native XLM SAC**: `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC`
 - **RPC Endpoint**: `https://soroban-testnet.stellar.org`
@@ -194,14 +195,14 @@ Proof of successful wallet connection (Freighter) and account authorization.
 ![Wallet Connected](./screenshots/reight-wallet-connected.png)
 
 #### 6. Smart Contract Test Output
-Verified results showing 14/14 automated tests passing in the Rust environment.
+Verified results showing the Rust contract test suite passing in the local development environment.
 ![Smart Contract Test Output](./screenshots/test-screenshot.png)
 
 ### 🚀 Key Features
 - **Zero-Lag Caching**: In-memory caching for instantaneous navigation and zero-lag transition between pages.
 - **High-Fidelity Skeletons**: Standardized skeleton loaders for a smooth, professional loading experience.
 - **Dynamic Activity Feed**: Real-time updates for on-chain contributions using contract events.
-- **Smart Wallet Routing**: Automatic detection and choice between Freighter and Albedo.
+- **Smart Wallet Routing**: Wallet chooser supports both Freighter and Albedo entry paths, with Freighter used for the main signed transaction flow.
 - **Creator Controls**: Role-based access for campaign creators to withdraw funds once goals are reached.
 
 ## 🟠 Level 3 - Orange Belt Submission
@@ -210,10 +211,10 @@ FundStar has been upgraded to meet the high standards of the Level 3 (Orange Bel
 
 ### ✅ Level 3 Requirements
 - [x] **Mini-dApp fully functional**: Deployed and tested on Stellar Testnet.
-- [x] **Minimum 3 tests passing**: 14 comprehensive contract tests passing (see below).
+- [x] **Minimum 3 tests passing**: 15 comprehensive contract tests passing (see below).
 - [x] **Loading states and progress indicators**: Implemented high-fidelity **Skeleton Loaders** for all data grids and detail views.
 - [x] **Basic caching implementation**: Integrated a **Zero-Lag Caching Layer** in the frontend for instantaneous navigation.
-- [x] **README complete**: All documentation, test results, and demo placeholders included.
+- [x] **README complete**: Documentation, test results, CI proof, and mobile screenshots included.
 
 ### 🎥 Demo Video
 [Watch the 1-minute demo video](https://www.loom.com/share/695d03e93cc743b8b52e1d4bb752740c)
@@ -256,12 +257,35 @@ FundStar has been upgraded with advanced inter-contract patterns and production-
 - [x] **Advanced event streaming**: Real-time contribution tracking via on-chain event indexing.
 
 ### ⛓️ Advanced Contract Details
-- **Main Contract:** `CAOAJBZA5JI5QSF3LY2QCVGHDIFQW5PQ7KBIE2JPUY6NBVWZYHDW4VCQ`
-- **Reward Token (STAR):** `ADD_TOKEN_ADDRESS_HERE`
-- **Inter-Contract Minting TX:** `ADD_TX_HASH_HERE`
+- **Main Contract:** `CDZIHKUBUJ3F6W6E2NRWP5JZXNBZP4O4PASBRQGW4FODFWK6I3PTDWE7`
+- **Reward Token (STAR):** `CBERWLOGNDQGNCAJIF44D46HQ3PP5LAKO3FXIGZQJODRS3RCC7CZKTRD`
+- **Native XLM SAC:** `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC`
+- **Deployment Source of Truth:** `frontend/.env`
+- **Reward Minting Proof:** Verified by the `test_reward_minting_on_funding` contract test and the frontend STAR balance integration.
 
 ### 📱 Mobile UI Proof
-![Mobile Responsive View](./screenshots/mobile-responsive.png)
+
+These mobile screenshots demonstrate that FundStar remains usable across key flows on a narrow viewport:
+
+#### 1. Home Page
+Responsive hero layout, CTA stacking, and mobile-safe stats card.
+![Mobile Home Page](./screenshots/mobile-home.png)
+
+#### 2. Create Campaign Flow
+Mobile-friendly form spacing and adaptive input layout for campaign creation.
+![Mobile Create Campaign](./screenshots/mobile-create-campaign.png)
+
+#### 3. Wallet Selector Modal
+Responsive wallet connection modal with touch-friendly actions.
+![Mobile Wallet Modal](./screenshots/mobile-wallet-modal.png)
+
+#### 4. Active Campaigns View
+Scrollable card layout and campaign browsing optimized for smaller screens.
+![Mobile Active Campaigns](./screenshots/mobile-active-campaigns.png)
+
+#### 5. Campaign Detail View (Dark Mode)
+Responsive campaign detail layout showing that the mobile experience also holds up in dark theme.
+![Mobile Campaign Detail Dark Mode](./screenshots/mobile-campaign-detail-dark.png)
 
 ### 🚀 Key Features (Level 4)
 - **Loyalty Reward System**: Automated inter-contract minting of STAR tokens for every backer.
