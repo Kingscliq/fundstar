@@ -115,7 +115,9 @@ async function simulateCall(
 /**
  * Fetch all campaigns from the contract.
  */
-export async function getAllCampaigns(forceRefresh = false): Promise<Campaign[]> {
+export async function getAllCampaigns(
+  forceRefresh = false,
+): Promise<Campaign[]> {
   const cacheKey = 'all_campaigns';
   if (!forceRefresh) {
     const cached = getFromCache(cacheKey);
@@ -142,7 +144,10 @@ export async function getAllCampaigns(forceRefresh = false): Promise<Campaign[]>
 /**
  * Fetch a single campaign by ID.
  */
-export async function getCampaignById(id: number, forceRefresh = false): Promise<Campaign | null> {
+export async function getCampaignById(
+  id: number,
+  forceRefresh = false,
+): Promise<Campaign | null> {
   const cacheKey = `campaign_${id}`;
   if (!forceRefresh) {
     const cached = getFromCache(cacheKey);
