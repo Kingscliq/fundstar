@@ -573,4 +573,41 @@ mod tests {
         let result = client.try_withdraw_funds(&token_id, &campaign_id);
         assert!(matches!(result, Err(Ok(ContractError::GoalNotReached))));
     }
+
+    #[test]
+    fn test_reward_minting_on_funding() {
+        let (env, client, _contract_id) = setup();
+        let creator = Address::generate(&env);
+        let funder = Address::generate(&env);
+        
+        // 1. Setup Reward Token
+        let reward_token_id = env.register_contract_wasm(None, reward_token::WASM);
+        let reward_client = reward_token::Client::new(&env, &reward_token_id);
+        reward_client.init(&_contract_id, &String::from_str(&env, "Star Rewards"), &soroban_sdk::Symbol::new(&env, "STAR"));
+
+        // 2. Setup FundStar Handshake
+        client.init(&reward_token_id);
+
+        // 3. Setup XLM Token (Mock)
+        let token_id = env.register_stellar_asset_contract(Address::generate(&env));
+        let token_admin = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
+        token_admin.mint(&funder, &1_000_000);
+
+        // 4. Create and Fund Campaign
+        let deadline = env.ledger().timestamp() + 86_400;
+        let campaign_id = client.create_campaign(
+            &creator,
+            &String::from_str(&env, "Reward Test"),
+            &String::from_str(&env, "Rewards Proof"),
+            &500_000,
+            &deadline,
+        );
+
+        // Fund with 100,000 XLM
+        client.fund_campaign(&token_id, &campaign_id, &funder, &100_000);
+
+        // 5. Verify Rewards (10% of 100,000 = 10,000 STAR)
+        let rewards = reward_client.balance(&funder);
+        assert_eq!(rewards, 10_000);
+    }
 }

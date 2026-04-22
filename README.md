@@ -218,11 +218,11 @@ FundStar has been upgraded to meet the high standards of the Level 3 (Orange Bel
 ### 🎥 Demo Video
 [Watch the 1-minute demo video](https://www.loom.com/share/695d03e93cc743b8b52e1d4bb752740c)
 
-### 🧪 Test Output (14 Passing)
+### 🧪 Test Output (15 Passing)
 FundStar uses a robust testing suite in Rust to ensure the safety of all crowdfunding operations.
 
 ```bash
-running 14 tests
+running 15 tests
 test tests::test_create_campaign_current_time_deadline ... ok
 test tests::test_create_campaign_invalid_goal_zero ... ok
 test tests::test_get_campaign_count_empty ... ok
@@ -237,8 +237,9 @@ test tests::test_multiple_campaigns_sequential_ids ... ok
 test tests::test_fund_campaign_success ... ok
 test tests::test_withdraw_fails_if_goal_not_reached ... ok
 test tests::test_withdraw_funds_success ... ok
+test tests::test_reward_minting_on_funding ... ok
 
-test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
 ```
 
 ## 🟢 Level 4 - Green Belt Submission
