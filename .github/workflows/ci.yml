@@ -30,11 +30,12 @@ jobs:
 
       - name: Install Stellar CLI
         run: |
-          curl -sSfL https://release.stellar.org/stellar-cli/install.sh | sh -s -- --to ./
-          echo "$(pwd)" >> $GITHUB_PATH
+          mkdir -p ${{ github.workspace }}/bin
+          curl -sSfL https://release.stellar.org/stellar-cli/install.sh | sh -s -- --to ${{ github.workspace }}/bin
+          echo "${{ github.workspace }}/bin" >> $GITHUB_PATH
 
       - name: Build Reward Token (Dependency)
-        run: ./stellar contract build --package reward_token
+        run: stellar contract build --package reward_token
 
       - name: Run Contract Tests
         run: cargo test
